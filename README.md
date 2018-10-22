@@ -26,7 +26,7 @@ Lista języków, z którym możemy przetłumaczyć słowa na polski:
 - język portugalski
 - język starogrecki
 - język nowogrecki
-- ;ęzyk łaciński
+- język łaciński
 - język litewski
 - język estoński
 - język czeski
