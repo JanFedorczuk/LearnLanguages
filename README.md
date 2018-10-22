@@ -12,7 +12,7 @@ Program nie wymaga instalacji, po sciągnięciu jest gotowy do użytku.
 
 ## Działanie
 
-Program umożliwia tłumaczenie słów z 20 języków obcych na polski, odbywa się ono z użyciem strony 'wiktionary.org' - istnieje również opcja ręcznego dodawania definicji słów. Przetłumaczone słowa zapisuje się na liście / listach stworzonych przez użytkownika, dzięki czemu można je przeglądać w uporządkowanej formie. Zapis, modyfikacja i przeglądanie danych odbywa się dzięki prostemu interfejsowi. 
+Program umożliwia tłumaczenie słów z 20 języków obcych na polski, odbywa się ono z użyciem strony `wiktionary.org` - istnieje również opcja ręcznego dodawania definicji słów. Przetłumaczone słowa zapisuje się na liście / listach stworzonych przez użytkownika, dzięki czemu można je przeglądać w uporządkowanej formie. Zapis, modyfikacja i przeglądanie danych odbywa się dzięki prostemu interfejsowi. 
 
 Lista języków, z którym możemy przetłumaczyć słowa na polski:
 
@@ -39,4 +39,4 @@ Lista języków, z którym możemy przetłumaczyć słowa na polski:
 
 ## Uwagi
 
-Dane są przechowywane w plikach z formatem '.JSON', których nie należy ręcznie modyfikować. Aby program mógł poprawnie z nich korzystać, muszą znajdować się w tym samym folderze co plik '.jar'
+Dane są przechowywane w plikach z formatem `.JSON`, których nie należy ręcznie modyfikować. Aby program mógł poprawnie z nich korzystać, muszą znajdować się w tym samym folderze co plik `.jar`.
