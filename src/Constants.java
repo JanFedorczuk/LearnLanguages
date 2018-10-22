@@ -177,6 +177,7 @@ public interface Constants
     String Z_A = "Z-A";
 
     String POLISH_LANGUAGE = "język polski";
+
     String ENGLISH_LANGUAGE = "język angielski";
     String RUSSIAN_LANGUAGE = "język rosyjski";
     String FRENCH_LANGUAGE = "język francuski";
@@ -189,6 +190,17 @@ public interface Constants
     String GERMAN_LANGUAGE = "język niemiecki";
     String CZECH_LANGUAGE = "język czeski";
     String LITHUANIAN_LANGUAGE = "język litewski";
+    String DUTCH_LANGUAGE = "język holenderski";
+    String HUNGARIAN_LANGUAGE = "język węgierski";
+    String TURKISH_LANGUAGE = "język turecki";
+    String FINNISH_LANGUAGE = "język fiński";
+    String SWEDISH_LANGUAGE = "język szwedzki";
+    String ESTONIAN_LANGUAGE = "język estoński";
+    String AFRIKAANS_LANGUAGE = "język afrykanerski";
+    String CROATIAN_LANGUAGE = "język chorwacki";
+
+    //język afrykanerski
+
 
     String KEY_FOR_FIRST_LANGUAGE = "FIRST_LANGUAGE";
     String KEY_FOR_SECOND_LANGUAGE = "SECOND_LANGUAGE";

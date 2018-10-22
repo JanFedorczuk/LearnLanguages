@@ -124,6 +124,14 @@ public class SettingsManager
         list.add(Constants.GERMAN_LANGUAGE);
         list.add(Constants.CZECH_LANGUAGE);
         list.add(Constants.LITHUANIAN_LANGUAGE);
+        list.add(Constants.DUTCH_LANGUAGE);
+        list.add(Constants.HUNGARIAN_LANGUAGE);
+        list.add(Constants.TURKISH_LANGUAGE);
+        list.add(Constants.FINNISH_LANGUAGE);
+        list.add(Constants.SWEDISH_LANGUAGE);
+        list.add(Constants.ESTONIAN_LANGUAGE);
+        list.add(Constants.AFRIKAANS_LANGUAGE);
+        list.add(Constants.CROATIAN_LANGUAGE);
 
         return list;
     }
