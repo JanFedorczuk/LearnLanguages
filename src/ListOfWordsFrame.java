@@ -6,11 +6,6 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//po oddaniu słowa, chciałbym żeby wybrane słowo było nadal wybrane
-//albo żeby wybrana lista u słowo w okienbku edycji list była wybrana
-
-//po modyfikacji listy gdy próbuje się zmodyfikować słowo wyrzcany jest błąd (null)
-
 public class ListOfWordsFrame extends MultiComponentComplexFrame
 {
     private ListOfWordsFrame listOfWordsFrame = this;
