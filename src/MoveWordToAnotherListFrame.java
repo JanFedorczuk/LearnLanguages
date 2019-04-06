@@ -14,6 +14,8 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
 
     private JButton moveWordButton;
 
+    private JButton previousWindowButton;
+
     private JComboBox startingListComboBox;
     private JComboBox wordComboBox;
     private JComboBox targetListComboBox;
@@ -25,26 +27,10 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
         this.jsonFilesManager = jsonFilesManager;
         jsonFilesManager.setListOfLists();
 
-        if(jsonFilesManager.getListOfLists().size() >= 2)
-        {
-            createUI();
-            setUIOptions();
-            displayUI();
-        }
-        else
-        {
-            this.dispose();
-
-            new InformationDialog(Constants.INFORMATION, Constants.THERE_HAS_TO_BE_TWO_LISTS,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
-
-            WindowsManager windowsManager = new WindowsManager(false,
-                    false, false);
-            new ListOfWordsFrame(jsonFilesManager, windowsManager);
-        }
+        createUI();
+        setUIOptions();
+        displayUI();
     }
-
-    //////////
 
     private void createUI()
     {
@@ -62,13 +48,18 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
         Font font    = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
 
         Dimension buttonDimension      = new Dimension(buttonWidth   ,buttonHeight);
+        Dimension toolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
+
         Dimension mainPanelDimension   = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions = new Dimension(mainPanelWidth, buttonHeight);
         Dimension minorPanelDimension  = new Dimension(mainPanelWidth, (int)Math.round(size * 0.280104));
         Dimension buttonPanelDimension = new Dimension(mainPanelWidth, buttonHeight);
 
         GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         JPanel mainPanel         = getNewPanel(mainPanelDimension, null);
+
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
 
         JPanel startingListPanel = createStaringListPanel(componentGbc, minorPanelDimension, buttonDimension, font);
 
@@ -78,30 +69,30 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
 
         JPanel buttonPanel       = createButtonPanel(buttonPanelDimension, buttonDimension, font);
 
-        //////////
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
 
         GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
         panelGbc.gridy = 0;
-        panelGbc.gridx = 0;
+        panelGbc.weighty = 0;
+
+        mainPanel.add(arrowPanel, panelGbc);
+
+        panelGbc.gridy = 1;
+        panelGbc.weighty = 1;
 
         mainPanel.add(startingListPanel, panelGbc);
 
-        panelGbc.gridy = 1;
-        panelGbc.gridx = 0;
+        panelGbc.gridy = 2;
 
         mainPanel.add(wordPanel, panelGbc);
 
-        panelGbc.gridy = 2;
-        panelGbc.gridx = 0;
+        panelGbc.gridy = 3;
 
         mainPanel.add(targetListPanel, panelGbc);
 
-        panelGbc.gridy = 3;
-        panelGbc.gridx = 0;
+        panelGbc.gridy = 4;
         mainPanel.add(buttonPanel, panelGbc);
-
-        //////////
 
         add(mainPanel);
 
@@ -118,12 +109,10 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
 
         this.setResizable(false);
 
-        addActionListenersToFrame();
+        addListenersToFrame();
 
         setInitialAvailabilityAndStateOfFrameElements();
     }
-
-    //////////
 
     private JPanel createStaringListPanel(GridBagConstraints gbc, Dimension minorPanelDimension,
                                           Dimension buttonDimension, Font font)
@@ -201,11 +190,13 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
         return buttonPanel;
     }
 
-    private void addActionListenersToFrame()
+    private void addListenersToFrame()
     {
         addActionListeners();
 
-        addKeyListenerToButtonPanel();
+        addKeyListenerToArrowPanel();
+
+        addKeyListenerToMoveWordButton();
 
         addNavigationKeyListeners();
 
@@ -214,10 +205,52 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
 
     private void addActionListeners()
     {
+        addActionListenersToArrowPanel();
         addActionListenerToStartingListPanel();
         addActionListenerToWordPanel();
         addActionListenerToTargetListPanel();
         addActionListenerToButtonPanel();
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
+    }
+
+    private void addKeyListenerToMoveWordButton()
+    {
+        moveWordButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveWord();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitProgram();
+                }
+            }
+        });
     }
 
     private void addActionListenerToStartingListPanel()
@@ -264,21 +297,6 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
             public void actionPerformed(ActionEvent e)
             {
                 moveWord();
-            }
-        });
-    }
-
-    private void addKeyListenerToButtonPanel()
-    {
-        moveWordButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if(e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveWord();
-                }
             }
         });
     }
@@ -346,13 +364,38 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
             jsonFilesManager.removeWordFromJsonListFiles(jsonFilesManager.getCurrentListIndex(),
                     jsonFilesManager.getCurrentWordIndex());
 
+            try
+            {
+                String firstPath = jsonFilesManager.getListOfLists().get(startingListComboBox.getSelectedIndex()) + "/" +
+                        jsonFilesManager.getContentOfGivenWord().get(0).get(0);
+
+                String secondPath = jsonFilesManager.getListOfLists().get(targetListComboBox.getSelectedIndex()) + "/" +
+                        jsonFilesManager.getContentOfGivenWord().get(0).get(0);
+
+                if(!jsonFilesManager.checkIfFolderExists(firstPath))
+                {
+                    jsonFilesManager.createFolder(firstPath);
+                }
+
+                if(!jsonFilesManager.checkIfFolderExists(secondPath))
+                {
+                    jsonFilesManager.createFolder(secondPath);
+                }
+
+                jsonFilesManager.moveFile(firstPath, secondPath);
+            }
+            catch(Exception exception)
+            {
+                exception.printStackTrace();
+            }
+
             new InformationDialog(Constants.INFORMATION, Constants.WORD_SUCCESSFULLY_MOVED,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
         else
         {
             new InformationDialog(Constants.ERROR, Constants.GIVEN_WORD_IS_ALREADY_ON_THE_SELECTED_LIST,
-                    Constants.PLEASE_WRITE_NEW_WORD_OR_MODIFY_THE_OLD_ONE, null);
+                    Constants.PLEASE_WRITE_NEW_WORD_OR_MODIFY_THE_OLD_ONE, null,null);
         }
 
         changeStateOfChosenWordComboBox(jsonFilesManager.getCurrentListIndex());
@@ -390,7 +433,7 @@ public class MoveWordToAnotherListFrame extends MultiComponentComplexFrame
     private void changeStateOfChosenWordComboBox(int listIndex)
     {
         jsonFilesManager.setCurrentListIndex(listIndex);
-        jsonFilesManager.setChosenListName(jsonFilesManager.getListOfLists().get(listIndex));
+        jsonFilesManager.setCurrentListName(jsonFilesManager.getListOfLists().get(listIndex));
         jsonFilesManager.setListOfWords();
 
         List<String> newList = new ArrayList<>();

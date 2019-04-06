@@ -12,22 +12,41 @@ public class WordFrame extends ComplexFrame
 
     private JPanel mainPanel;
 
+    private JButton previousWindowButton;
+
     private JButton getPreviousWordButton;
     private JButton getNextWordButton    ;
     private JButton editWordContentButton;
-    private JButton exitWordJFameButton  ;
+    private JButton nextWindowButton;
+
+    private JToolBar playerToolbar;
+    private JLabel fileName;
+    private JSlider timeSlider;
+
+    private JButton previousSoundFileButton;
+    private JButton playOrPauseSoundButton;
+    private JButton stopSoundButton;
+    private JButton nextSoundFileButton;
 
     private boolean isActionListenerAdded = false;
 
     private JsonFilesManager jsonFilesManager;
     private WindowsManager windowsManager;
+    private SoundFilesManager soundFilesManager;
     private List<List<String>> wordAndItsContent;
 
+    private Thread actionThread;
+
+    private SoundPlayer soundPlayer;
+
+    private boolean stateValue;
+
     public WordFrame(JsonFilesManager jsonFilesManager, WindowsManager windowsManager,
-                     List<List<String>> wordAndItsContent)
+                     SoundFilesManager soundFilesManager, List<List<String>> wordAndItsContent)
     {
         this.jsonFilesManager = jsonFilesManager;
         this.windowsManager = windowsManager;
+        this.soundFilesManager = soundFilesManager;
         this.wordAndItsContent = wordAndItsContent;
 
         createUI();
@@ -37,158 +56,289 @@ public class WordFrame extends ComplexFrame
 
     private void createUI()
     {
-        this.setLayout(new GridBagLayout());
+        try
+        {
+            this.setLayout(new GridBagLayout());
 
-        int size = getSizeForVisualPurposes();
+            int size = getSizeForVisualPurposes();
 
-        buttonWidth      = (int) (size * Constants.buttonWidthMultiplier);
-        int buttonHeight = (int) (size * Constants.buttonHeightMultiplier);
-        int fontSize     = (int) (size * Constants.fontMultiplier);
+            buttonWidth      = (int) (size * Constants.buttonWidthMultiplier);
+            int buttonHeight = (int) (size * Constants.buttonHeightMultiplier);
+            int fontSize     = (int) (size * Constants.fontMultiplier);
 
-        int mainPanelWidth  = (int) (buttonWidth * 4.632);
-        int mainPanelHeight = (int) (size * 2.816);
+            int mainPanelWidth  = (int) (buttonWidth * 4.632);
 
-        int scrollWordPanelSide = (int)Math.round(mainPanelHeight * 0.8522727);
+            int mainPanelHeight;
+            int scrollWordPanelSide;
+            int buttonPanelHeight;
 
-        Dimension mainPanelDimension       = new Dimension(mainPanelWidth, mainPanelHeight);
-        Dimension scrollWordPanelDimension = new Dimension(scrollWordPanelSide, scrollWordPanelSide);
-        Dimension buttonPanelDimension     = new Dimension(mainPanelWidth, buttonHeight);
+            if(windowsManager.getIfWordIsBeingBrowsed())
+            {
+                mainPanelHeight = (int) (size * 2.92);
+                scrollWordPanelSide = (int)Math.round(mainPanelHeight * 0.7936508);
+                buttonPanelHeight = (int)(mainPanelHeight * 0.142465754325);
+            }
+            else
+            {
+                mainPanelHeight = (int) (size * 2.816);
+                scrollWordPanelSide = (int)Math.round(mainPanelHeight * 0.8522727);
+                buttonPanelHeight = buttonHeight;
+            }
 
-        Dimension buttonDimension          = new Dimension(buttonWidth, buttonHeight);
+            Dimension mainPanelDimension       = new Dimension(mainPanelWidth, mainPanelHeight);
+            Dimension arrowPanelDimensions           = new Dimension(mainPanelWidth, buttonHeight);
+            Dimension scrollWordPanelDimension = new Dimension(scrollWordPanelSide, scrollWordPanelSide);
+            Dimension buttonPanelDimension     = new Dimension(mainPanelWidth, buttonPanelHeight);
 
-        Font buttonFont = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
+            Dimension buttonDimension          = new Dimension(buttonWidth, buttonHeight);
+            Dimension toolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
+            Dimension playerToolbarButtonDimension = new Dimension((buttonWidth / 4), buttonHeight);
 
-        GridBagConstraints gbc = getGridBagConstraints(GridBagConstraints.CENTER);
+            Font buttonFont = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
 
-        mainPanel                  = getNewPanel(mainPanelDimension, null);
-        JScrollPane scrollWordPane = getNewScrollPane(fontSize, gbc, scrollWordPanelDimension);
-        JPanel buttonPanel         = createButtonPanel(gbc, buttonDimension, buttonFont, buttonPanelDimension);
+            GridBagConstraints gbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
-        gbc.gridy = 0;
-        mainPanel.add(scrollWordPane, gbc);
+            mainPanel                  = getNewPanel(mainPanelDimension, null);
+            JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, buttonFont,null);
+            JScrollPane scrollWordPane = getNewScrollPane(fontSize, gbc, scrollWordPanelDimension);
+            JPanel buttonPanel         = createButtonPanel(gbc, buttonPanelDimension, buttonFont, buttonDimension,
+                    playerToolbarButtonDimension);
 
-        gbc.gridy = 1;
-        mainPanel.add(buttonPanel, gbc);
+            previousWindowButton = getPreviousWindowButton(arrowPanel);
 
-        add(mainPanel, gbc);
-        pack();
+            gbc.gridy = 0;
+            gbc.weighty = 0;
+            mainPanel.add(arrowPanel, gbc);
+
+            gbc.gridy = 1;
+            gbc.weighty = 1;
+            mainPanel.add(scrollWordPane, gbc);
+
+            gbc.gridy = 2;
+            mainPanel.add(buttonPanel, gbc);
+
+            add(mainPanel, gbc);
+            pack();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+
     }
 
     private void setUIOptions()
     {
-        this.setTitle(Constants.PROGRAM_NAME);
+        try
+        {
+            this.setTitle(Constants.PROGRAM_NAME);
 
-        this.setLocation(((Constants.DIMENSION.width / 2) - (int)(buttonWidth * 2.25)),
-                ((Constants.DIMENSION.height / 2) - (int)(Constants.DIMENSION.height / 2.15)));
+            this.setLocation(((Constants.DIMENSION.width / 2) - (int)(buttonWidth * 2.25)),
+                    ((Constants.DIMENSION.height / 2) - (int)(Constants.DIMENSION.height / 2.15)));
 
-        this.setResizable(false);
+            this.setResizable(false);
 
-        addListenersToFrame();
+            addListenersToFrame();
+
+            setInitialStateOfWordFrame();
+
+            displayUI();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
     }
 
     private JPanel createWordPanel(int fontSize, GridBagConstraints gbc)
     {
-        JPanel wordPanel = getNewPanel(null, Color.WHITE);
-
-        JLabel wordNameLabel = getNewLabel(wordAndItsContent.get(0).get(0),
-                new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 2.5)));
-
-        wordPanel.add(wordNameLabel);
-
-        List<List<String>> newWordAndItsContent = returnWordAndItsContentForVisualPurposes(wordAndItsContent);
-        newWordAndItsContent.remove(0);
-
-        int i = 1;
-        for(List<String> list: newWordAndItsContent)
+        try
         {
-            gbc.gridy = i;
-            gbc.gridx = 0;
-            JLabel categorySeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
-                    new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 1.5)));
+            JPanel wordPanel = getNewPanel(null, Color.WHITE);
 
-            wordPanel.add(categorySeparationLabel, gbc);
-            i++;
+            JLabel wordNameLabel = getNewLabel(wordAndItsContent.get(0).get(0),
+                    new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 2.5)));
 
-            gbc.gridy = i;
+            wordPanel.add(wordNameLabel);
 
-            JLabel categoryNameLabel = getNewLabel(list.get(0),
-                    new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 1.5)));
+            List<List<String>> newWordAndItsContent = returnWordAndItsContentForVisualPurposes(wordAndItsContent);
 
-            wordPanel.add(categoryNameLabel, gbc);
-            i++;
-
-            JLabel categoryFromElementSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
-                    new Font(Constants.FONT_NAME, Font.BOLD, fontSize / 2));
-
-            gbc.gridy = i;
-            wordPanel.add(categoryFromElementSeparationLabel, gbc);
-            i++;
-
-            for(int counter = 1; counter < list.size(); counter++)
+            int i = 1;
+            for(List<String> list: newWordAndItsContent)
             {
                 gbc.gridy = i;
+                gbc.gridx = 0;
+                JLabel categorySeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
+                        new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 1.5)));
 
-                JLabel elementLabel = getNewLabel(list.get(counter),
-                        (new Font(Constants.FONT_NAME, Font.BOLD, fontSize)));
-
-                wordPanel.add(elementLabel, gbc);
+                wordPanel.add(categorySeparationLabel, gbc);
                 i++;
 
                 gbc.gridy = i;
 
-                JLabel elementSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
+                JLabel categoryNameLabel = getNewLabel(list.get(0),
+                        new Font(Constants.FONT_NAME, Font.BOLD, (int)(fontSize * 1.5)));
+
+                wordPanel.add(categoryNameLabel, gbc);
+                i++;
+
+                JLabel categoryFromElementSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
                         new Font(Constants.FONT_NAME, Font.BOLD, fontSize / 2));
 
-                wordPanel.add(elementSeparationLabel, gbc);
+                gbc.gridy = i;
+                wordPanel.add(categoryFromElementSeparationLabel, gbc);
                 i++;
+
+                for(int counter = 1; counter < list.size(); counter++)
+                {
+                    gbc.gridy = i;
+
+                    JLabel elementLabel = getNewLabel(list.get(counter),
+                            (new Font(Constants.FONT_NAME, Font.BOLD, fontSize)));
+
+                    wordPanel.add(elementLabel, gbc);
+                    i++;
+
+                    gbc.gridy = i;
+
+                    JLabel elementSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
+                            new Font(Constants.FONT_NAME, Font.BOLD, fontSize / 2));
+
+                    wordPanel.add(elementSeparationLabel, gbc);
+                    i++;
+                }
             }
+
+            gbc.gridy = i;
+
+            JLabel wordSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
+                    new Font(Constants.FONT_NAME, Font.BOLD, fontSize));
+
+            wordPanel.add(wordSeparationLabel, gbc);
+
+            return wordPanel;
         }
-
-        gbc.gridy = i;
-
-        JLabel wordSeparationLabel = getNewLabel(Constants.EMPTY_SPACE,
-                new Font(Constants.FONT_NAME, Font.BOLD, fontSize));
-
-        wordPanel.add(wordSeparationLabel, gbc);
-
-        return wordPanel;
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+            return null;
+        }
     }
 
-    private JPanel createButtonPanel(GridBagConstraints gbc, Dimension buttonDimension, Font buttonFont,
-                                     Dimension buttonPanelDimension)
+    private JPanel createButtonPanel(GridBagConstraints gbc, Dimension buttonPanelDimension, Font buttonFont,
+                                     Dimension buttonDimension, Dimension playerToolbarButtonDimension)
     {
-        JPanel buttonPanel = getNewPanel(buttonPanelDimension, null);
-
-        if(!windowsManager.getIfWordIsBeingBrowsed())
+        try
         {
-            gbc.gridy = 0;
-            gbc.gridx = 0;
-            editWordContentButton = getNewButton(buttonDimension, Constants.EDIT, buttonFont);
+            List<String> filesNames = new ArrayList<>();
 
-            buttonPanel.add(editWordContentButton, gbc);
+            if(windowsManager.getIfWordIsBeingBrowsed())
+            {
+                try
+                {
+                    if(jsonFilesManager.getFilesBulkCreationValue(jsonFilesManager.getCurrentListName() + "/" +
+                            jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/"))
+                    {
+                        filesNames.add(wordAndItsContent.get(0).get(0));
+                    }
+                    else
+                    {
+                        filesNames = jsonFilesManager.getFilesNamesJsonArray(jsonFilesManager.getCurrentListName() + "/" +
+                                jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/");
+                    }
 
-            gbc.gridy = 0;
-            gbc.gridx = 1;
-            exitWordJFameButton = getNewButton(buttonDimension, Constants.EXIT, buttonFont);
+                    if(!filesNames.isEmpty())
+                    {
+                        soundPlayer = new SoundPlayer(filesNames,this,
+                                jsonFilesManager.getCurrentListName() + "/" + jsonFilesManager.getListOfWords().get
+                                        (jsonFilesManager.getCurrentWordIndex()) + "/" + Constants.SOUND_FILES + "/");
+                    }
+                    else
+                    {
+                        soundPlayer = null;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    exception.printStackTrace();
+                    filesNames = null;
+                    soundPlayer = null;
+                }
+            }
 
-            buttonPanel.add(exitWordJFameButton, gbc);
+            JPanel buttonPanel = getNewPanel(buttonPanelDimension, null);
+
+            if(windowsManager.getIfWordIsBeingBrowsed())
+            {
+                gbc.gridy = 0;
+                gbc.gridx = 1;
+                playerToolbar = getNewToolbar(buttonDimension, false, true);
+                addButtonsToPlayerToolbar(playerToolbarButtonDimension, buttonFont);
+                buttonPanel.add(playerToolbar, gbc);
+
+                gbc.gridy = 1;
+                gbc.gridx = 0;
+                getPreviousWordButton = getNewButton(buttonDimension, Constants.PREVIOUS, buttonFont);
+                buttonPanel.add(getPreviousWordButton, gbc);
+
+                gbc.gridy = 1;
+                gbc.gridx = 1;
+
+                if(filesNames != null && !filesNames.isEmpty())
+                {
+                    fileName = getNewLabel(filesNames.get(0), buttonFont);
+                }
+                else
+                {
+                    fileName = getNewLabel("", buttonFont);
+                }
+
+                buttonPanel.add(fileName, gbc);
+
+                gbc.gridy = 1;
+                gbc.gridx = 2;
+                getNextWordButton = getNewButton(buttonDimension, Constants.NEXT, buttonFont);
+                buttonPanel.add(getNextWordButton, gbc);
+
+                gbc.gridy = 2;
+                gbc.gridx = 1;
+                timeSlider = new JSlider();
+
+                setTimeSliderValue(0);
+
+                if(filesNames != null && !filesNames.isEmpty())
+                {
+                    soundPlayer.setSliderMaxValue();
+                }
+                else
+                {
+                    timeSlider.setEnabled(false);
+                }
+
+                buttonPanel.add(timeSlider, gbc);
+            }
+            else
+            {
+                editWordContentButton = getNewButton(buttonDimension, Constants.EDIT, buttonFont);
+
+                nextWindowButton = getNewButton(buttonDimension, Constants.TO_SAVE, buttonFont);
+
+                gbc.weightx = 1;
+
+                gbc.gridx = 0;
+                buttonPanel.add(editWordContentButton, gbc);
+
+                gbc.gridx = 1;
+                buttonPanel.add(nextWindowButton, gbc);
+            }
+
+            return buttonPanel;
         }
-        else
+        catch (Exception exception)
         {
-            gbc.gridy = 0;
-            gbc.gridx = 0;
-            getPreviousWordButton = getNewButton(buttonDimension, Constants.PREVIOUS_WORD, buttonFont);
-
-            buttonPanel.add(getPreviousWordButton, gbc);
-
-            gbc.gridy = 0;
-            gbc.gridx = 1;
-            getNextWordButton = getNewButton(buttonDimension, Constants.NEXT_WORD, buttonFont);
-
-            buttonPanel.add(getNextWordButton, gbc);
+            exception.printStackTrace();
+            return null;
         }
-
-        return buttonPanel;
     }
 
     private JScrollPane getNewScrollPane(int fontSize, GridBagConstraints gbc, Dimension dimension)
@@ -199,67 +349,381 @@ public class WordFrame extends ComplexFrame
         return scrollWordPane;
     }
 
+    private void addButtonsToPlayerToolbar(Dimension playerToolbarButtonDimension, Font font)
+    {
+        try
+        {
+            previousSoundFileButton = getNewButton(playerToolbarButtonDimension, Constants.PREVIOUS_SOUND_FILE, font);
+            playOrPauseSoundButton  = getNewButton(playerToolbarButtonDimension, Constants.PLAY_SOUND, font);
+            stopSoundButton         = getNewButton(playerToolbarButtonDimension, Constants.STOP_SOUND, font);
+            nextSoundFileButton     = getNewButton(playerToolbarButtonDimension, Constants.NEXT_SOUND_FILE, font);
+
+            previousSoundFileButton.setToolTipText(Constants.PREVIOUS_SOUND_FILE_TIP);
+            stopSoundButton.setToolTipText(Constants.STOP_SOUND_TIP);
+            playOrPauseSoundButton.setToolTipText(Constants.PLAY_SOUND_TIP);
+            nextSoundFileButton.setToolTipText(Constants.NEXT_SOUND_FILE_TIP);
+
+            playerToolbar.add(previousSoundFileButton);
+            playerToolbar.add(stopSoundButton);
+            playerToolbar.add(playOrPauseSoundButton);
+            playerToolbar.add(nextSoundFileButton);
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    private void addActionListenersToPlayer()
+    {
+        if(windowsManager.getIfWordIsBeingBrowsed())
+        {
+          previousSoundFileButton.addActionListener(new ActionListener()
+          {
+              public void actionPerformed(ActionEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          soundPlayer.choosePreviousFile();
+                      }
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+          });
+
+          playOrPauseSoundButton.addActionListener(new ActionListener()
+          {
+              public void actionPerformed(ActionEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          soundPlayer.action();
+                      }
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+          });
+
+          stopSoundButton.addActionListener(new ActionListener()
+          {
+              public void actionPerformed(ActionEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          soundPlayer.stop();
+                      }
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+          });
+
+          nextSoundFileButton.addActionListener(new ActionListener()
+          {
+              public void actionPerformed(ActionEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          soundPlayer.chooseNextFile();
+
+                      }
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+          });
+
+          timeSlider.addMouseListener(new MouseAdapter()
+          {
+              @Override
+              public void mousePressed(MouseEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          soundPlayer.stop();
+                      }
+
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+
+              @Override
+              public void mouseReleased(MouseEvent e)
+              {
+                  try
+                  {
+                      if(soundPlayer != null)
+                      {
+                          actionThread = null;
+                          actionThread = new Thread(new ActionRunnable());
+                          actionThread.start();
+                      }
+                  }
+                  catch (Exception exception)
+                  {
+                      exception.printStackTrace();
+                  }
+              }
+          });
+        }
+    }
+
+    private void addKeyListenersToPlayer()
+    {
+        if(windowsManager.getIfWordIsBeingBrowsed())
+        {
+            previousSoundFileButton.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                soundPlayer.choosePreviousFile();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            playOrPauseSoundButton.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                soundPlayer.action();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            stopSoundButton.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                soundPlayer.stop();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            nextSoundFileButton.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                soundPlayer.chooseNextFile();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+            timeSlider.addKeyListener(new KeyAdapter()
+            {
+                public void keyPressed(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_LEFT)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                if(soundPlayer.getState() == Constants.PLAYING)
+                                {
+                                    soundPlayer.pause();
+                                }
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_LEFT)
+                    {
+                        try
+                        {
+                            if(soundPlayer != null)
+                            {
+                                actionThread = null;
+                                actionThread = new Thread(new ActionRunnable());
+                                actionThread.start();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     private void addListenersToFrame()
     {
-        if(!isActionListenerAdded)
+        try
         {
+            if(!isActionListenerAdded)
+            {
+                addWindowListener();
+
+                isActionListenerAdded = true;
+            }
+
             addActionListeners();
+
             addKeyListeners();
 
-            addWindowListener();
-
             addNavigationKeyListeners();
-
-            isActionListenerAdded = true;
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
         }
     }
 
     private void addActionListeners()
     {
-        if(windowsManager.getIfWordIsBeingBrowsed())
+        try
         {
-            getPreviousWordButton.addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    getPreviousWord();
-                }
-            });
+            addActionListenersToArrowPanel();
 
-            getNextWordButton.addActionListener(new ActionListener()
+            if(windowsManager.getIfWordIsBeingBrowsed())
             {
-                @Override
-                public void actionPerformed(ActionEvent e)
+                getPreviousWordButton.addActionListener(new ActionListener()
                 {
-                    getNextWord();
-                }
-            });
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        getPreviousWord();
+                    }
+                });
+
+                getNextWordButton.addActionListener(new ActionListener()
+                {
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        getNextWord();
+                    }
+                });
+
+                addActionListenersToPlayer();
+            }
+            else
+            {
+                editWordContentButton.addActionListener(new ActionListener()
+                {
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        editWordContent();
+                    }
+                });
+
+                nextWindowButton.addActionListener(new ActionListener()
+                {
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        getNextWindow();
+                    }
+                });
+            }
         }
-        else
+        catch (Exception exception)
         {
-            editWordContentButton.addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    editWordContent();
-                }
-            });
-
-            exitWordJFameButton.addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    exitFrame();
-                }
-            });
+            exception.printStackTrace();
         }
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
     }
 
     private void addKeyListeners()
     {
+        addKeyListenerToArrowPanel();
+
         if(windowsManager.getIfWordIsBeingBrowsed())
         {
             getPreviousWordButton.addKeyListener(new KeyAdapter()
@@ -267,35 +731,43 @@ public class WordFrame extends ComplexFrame
                 @Override
                 public void keyReleased(KeyEvent e)
                 {
-                    if(e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_LEFT )
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
                     {
                         getPreviousWord();
                     }
-
-                    if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                    {
-                        exitFrame();
-                    }
                 }
             });
-
 
             getNextWordButton.addKeyListener(new KeyAdapter()
             {
                 @Override
                 public void keyReleased(KeyEvent e)
                 {
-                    if(e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_RIGHT )
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
                     {
                         getNextWord();
                     }
-
-                    if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                    {
-                        exitFrame();
-                    }
                 }
             });
+
+            class passiveAction extends AbstractAction
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                }
+            }
+
+            KeyStroke upKeyStroke = KeyStroke.getKeyStroke(Constants.UP);
+            KeyStroke downKeyStroke = KeyStroke.getKeyStroke(Constants.UP);
+
+            timeSlider.getInputMap().put(upKeyStroke, upKeyStroke);
+            timeSlider.getActionMap().put(upKeyStroke, new passiveAction());
+
+            timeSlider.getInputMap().put(downKeyStroke, downKeyStroke);
+            timeSlider.getActionMap().put(downKeyStroke, new passiveAction());
+
+            addKeyListenersToPlayer();
         }
         else
         {
@@ -311,66 +783,29 @@ public class WordFrame extends ComplexFrame
                 }
             });
 
-            exitWordJFameButton.addKeyListener(new KeyAdapter()
+            nextWindowButton.addKeyListener(new KeyAdapter()
             {
                 @Override
                 public void keyReleased(KeyEvent e)
                 {
-                    if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
                     {
-                        exitFrame();
+                        getNextWindow();
                     }
                 }
             });
         }
+    }
 
-        wordFrame.addKeyListener(new KeyAdapter()
-        {
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if(windowsManager.getIfWordIsBeingBrowsed())
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
-                    int newWordIndex = 0;
-                    if(e.getKeyCode() == KeyEvent.VK_RIGHT)
-                    {
-                        if(jsonFilesManager.getCurrentWordIndex() != jsonFilesManager.getListOfWords().size() - 1)
-                        {
-                            newWordIndex = jsonFilesManager.getCurrentWordIndex() + 1;
-                        }
-                    }
-                    if(e.getKeyCode() == KeyEvent.VK_LEFT)
-                    {
-                        if(jsonFilesManager.getCurrentWordIndex() != 0)
-                        {
-                            newWordIndex = jsonFilesManager.getCurrentWordIndex() - 1;
-                        }
-                        else
-                        {
-                            newWordIndex = jsonFilesManager.getListOfWords().size() - 1;
-                        }
-                    }
-
-                    jsonFilesManager.setCurrentWordIndex(newWordIndex);
-                    jsonFilesManager.setContentOfGivenWord();
-                    wordAndItsContent = jsonFilesManager.getContentOfGivenWord();
-
-                    wordFrame.remove(mainPanel);
-
-                    createUI();
-                    setUIOptions();
-                    repaint();
-                }
-                else
-                {
-                    if(e.getKeyCode() == KeyEvent.VK_RIGHT)
-                    {
-                        exitWordJFameButton.requestFocus();
-                    }
-                    if(e.getKeyCode() == KeyEvent.VK_LEFT)
-                    {
-                        editWordContentButton.requestFocus();
-                    }
+                    exitFrame();
                 }
             }
         });
@@ -378,21 +813,98 @@ public class WordFrame extends ComplexFrame
 
     private void addNavigationKeyListeners()
     {
-        List<Component> components = new ArrayList<>();
-
-        if(windowsManager.getIfWordIsBeingBrowsed())
+        try
         {
-            components.add(getPreviousWordButton);
-            components.add(getNextWordButton);
+            List<Component> components = new ArrayList<>();
+
+            previousWindowButton.addKeyListener(new KeyAdapter()
+            {
+                public void keyReleased(KeyEvent e)
+                {
+                    if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                    {
+                        exitFrame();
+                    }
+                }
+            });
+
+            if(windowsManager.getIfWordIsBeingBrowsed())
+            {
+                components.add(getPreviousWordButton);
+                components.add(previousSoundFileButton);
+                components.add(stopSoundButton);
+                components.add(playOrPauseSoundButton);
+                components.add(nextSoundFileButton);
+                components.add(getNextWordButton);
+
+                for(Component component: components)
+                {
+                    component.addKeyListener(new KeyAdapter()
+                    {
+                        @Override
+                        public void keyReleased(KeyEvent e)
+                        {
+                            if(e.getKeyCode() == KeyEvent.VK_DOWN)
+                            {
+                                if(timeSlider.isEnabled())
+                                {
+                                    timeSlider.requestFocus();
+                                }
+                            }
+                        }
+                    });
+                }
+
+                timeSlider.addKeyListener(new KeyAdapter()
+                {
+                    @Override
+                    public void keyReleased(KeyEvent e)
+                    {
+                        if(e.getKeyCode() == KeyEvent.VK_UP)
+                        {
+                            playOrPauseSoundButton.requestFocus();
+                        }
+                    }
+                });
+
+                removeNativeListener(components);
+
+                addNavigationKeyListenersToMainComponents(components, true, false);
+            }
+            else
+            {
+                editWordContentButton.addKeyListener(new KeyAdapter()
+                {
+                    public void keyReleased(KeyEvent e)
+                    {
+                        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                        {
+                            exitFrame();
+                        }
+                    }
+                });
+
+                nextWindowButton.addKeyListener(new KeyAdapter()
+                {
+                    public void keyReleased(KeyEvent e)
+                    {
+                        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                        {
+                            exitFrame();
+                        }
+                    }
+                });
+
+                components.add(editWordContentButton);
+                components.add(nextWindowButton);
+
+                addNavigationKeyListenersToMainComponents(components, true, false);
+            }
         }
-        else
+        catch (Exception exception)
         {
-            components.add(editWordContentButton);
-            components.add(exitWordJFameButton);
+            exception.printStackTrace();
         }
-
-        addNavigationKeyListenersToMainComponents(components, true, false);
-
     }
 
     private void addWindowListener()
@@ -402,123 +914,248 @@ public class WordFrame extends ComplexFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                exitFrame();
+                exitProgram();
             }
         });
     }
 
     private void editWordContent()
     {
+        if(soundPlayer != null)
+        {
+            soundPlayer.stop();
+            soundPlayer.closeClipAndAudioInputStream();
+        }
+
+        new AddOrEditWordManuallyFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent).
+                setVisible(true);
+
+        wordFrame.dispose();
+    }
+
+    private void getNextWindow()
+    {
         wordFrame.dispose();
 
-        new AddOrEditWordManuallyFrame(jsonFilesManager, windowsManager, wordAndItsContent).
-                setVisible(true);
-    }
-
-    private void getNextWord()
-    {
-        int newWordIndex;
-        if(jsonFilesManager.getCurrentWordIndex() != jsonFilesManager.getListOfWords().size() - 1)
-        {
-            newWordIndex = jsonFilesManager.getCurrentWordIndex() + 1;
-            getNextWordButton.setFocusable(false);
-
-        }
-        else
-        {
-            newWordIndex = 0;
-            getNextWordButton.setFocusable(false);
-        }
-
-        jsonFilesManager.setCurrentWordIndex(newWordIndex);
-        jsonFilesManager.setContentOfGivenWord();
-        wordAndItsContent = jsonFilesManager.getContentOfGivenWord();
-
-
-        wordFrame.remove(mainPanel);
-
-        createUI();
-        setUIOptions();
-        repaint();
-    }
-
-    private void getPreviousWord()
-    {
-        int newWordIndex;
-        if(jsonFilesManager.getCurrentWordIndex() != 0)
-        {
-            newWordIndex = jsonFilesManager.getCurrentWordIndex() - 1;
-            getNextWordButton.setFocusable(false);
-
-        }
-        else
-        {
-            newWordIndex = jsonFilesManager.getListOfWords().size() - 1;
-            getPreviousWordButton.setFocusable(false);
-        }
-
-        jsonFilesManager.setCurrentWordIndex(newWordIndex);
-        jsonFilesManager.setContentOfGivenWord();
-        wordAndItsContent = jsonFilesManager.getContentOfGivenWord();
-
-        wordFrame.remove(mainPanel);
-
-        createUI();
-        setUIOptions();
-        repaint();
+        new AddOrChooseListOfWordsFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
     }
 
     public void exitFrame()
     {
         if(windowsManager.getIfWordIsBeingBrowsed())
         {
+            if(soundPlayer != null)
+            {
+                soundPlayer.stop();
+                soundPlayer.closeClipAndAudioInputStream();
+            }
+
             wordFrame.dispose();
+
             new ListOfWordsFrame(jsonFilesManager, windowsManager);
         }
         else
         {
             wordFrame.dispose();
 
-            new AddOrChooseListOfWordsFrame(jsonFilesManager, windowsManager, wordAndItsContent);
+            new AddOrEditWordManuallyFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
         }
     }
 
     private List<List<String>> returnWordAndItsContentForVisualPurposes(List<List<String>> wordAndItsContent)
     {
-        List<List<String>> newListOfStringLists = new ArrayList<>();
-        for(List<String> List: wordAndItsContent)
+        try
         {
-            List<String> newStringList = new ArrayList<>();
-            for (String string: List)
+            List<List<String>> newListOfStringLists = new ArrayList<>();
+            for(List<String> List: wordAndItsContent)
             {
-                if((string.length() >= Constants.NUMBER_OF_CHARACTERS_IN_LINE) && (string.contains(" ")))
+                List<String> newStringList = new ArrayList<>();
+                for (String string: List)
                 {
-                    while(string.length() >= Constants.NUMBER_OF_CHARACTERS_IN_LINE)
+                    if((string.length() >= Constants.NUMBER_OF_CHARACTERS_IN_LINE) && (string.contains(" ")))
                     {
-                        for(int counter = (Constants.NUMBER_OF_CHARACTERS_IN_LINE - 1); counter > 0; counter--)
+                        while(string.length() >= Constants.NUMBER_OF_CHARACTERS_IN_LINE)
                         {
-                            char charAt = string.charAt(counter);
-                            if(Character.isWhitespace(charAt))
+                            for(int counter = (Constants.NUMBER_OF_CHARACTERS_IN_LINE - 1); counter > 0; counter--)
                             {
-                                String firstPartOfTheNewString = string.substring(0, counter);
-                                string = string.substring(counter, string.length());
-                                newStringList.add(firstPartOfTheNewString);
-                                if(string.length() < Constants.NUMBER_OF_CHARACTERS_IN_LINE)
+                                char charAt = string.charAt(counter);
+                                if(Character.isWhitespace(charAt))
                                 {
-                                    newStringList.add(string);
+                                    String firstPartOfTheNewString = string.substring(0, counter);
+                                    string = string.substring(counter, string.length());
+                                    newStringList.add(firstPartOfTheNewString);
+                                    if(string.length() < Constants.NUMBER_OF_CHARACTERS_IN_LINE)
+                                    {
+                                        newStringList.add(string);
+                                    }
+                                    counter = 0;
                                 }
-                                counter = 0;
                             }
                         }
                     }
+                    else
+                    {
+                        newStringList.add(string);
+                    }
                 }
-                else
-                {
-                    newStringList.add(string);
-                }
+                newListOfStringLists.add(newStringList);
             }
-            newListOfStringLists.add(newStringList);
+            return newListOfStringLists;
         }
-        return newListOfStringLists;
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+            return null;
+        }
+    }
+
+    private void getNextWord()
+    {
+        try
+        {
+            if(soundPlayer != null)
+            {
+                soundPlayer.stop();
+            }
+
+            int newWordIndex;
+
+            if(jsonFilesManager.getCurrentWordIndex() != jsonFilesManager.getListOfWords().size() - 1)
+            {
+                newWordIndex = jsonFilesManager.getCurrentWordIndex() + 1;
+            }
+            else
+            {
+                newWordIndex = 0;
+            }
+
+            jsonFilesManager.setCurrentWordIndex(newWordIndex);
+            jsonFilesManager.setContentOfGivenWord();
+            wordAndItsContent = jsonFilesManager.getContentOfGivenWord();
+
+            wordFrame.remove(mainPanel);
+
+            createUI();
+            setUIOptions();
+            repaint();
+
+            getNextWordButton.requestFocus();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    private void getPreviousWord()
+    {
+        try
+        {
+            if(soundPlayer != null)
+            {
+                soundPlayer.stop();
+            }
+
+            int newWordIndex;
+
+            if(jsonFilesManager.getCurrentWordIndex() != 0)
+            {
+                newWordIndex = jsonFilesManager.getCurrentWordIndex() - 1;
+            }
+            else
+            {
+                newWordIndex = jsonFilesManager.getListOfWords().size() - 1;
+            }
+
+            jsonFilesManager.setCurrentWordIndex(newWordIndex);
+            jsonFilesManager.setContentOfGivenWord();
+            wordAndItsContent = jsonFilesManager.getContentOfGivenWord();
+
+            wordFrame.remove(mainPanel);
+
+            createUI();
+            setUIOptions();
+            repaint();
+
+            getPreviousWordButton.requestFocus();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    private void setInitialStateOfWordFrame()
+    {
+        if(windowsManager.getIfWordIsBeingBrowsed())
+        {
+            playOrPauseSoundButton.requestFocus();
+        }
+        else
+        {
+            nextWindowButton.requestFocus();
+        }
+    }
+
+    public void setFileName(String text)
+    {
+        fileName.setText(text);
+    }
+
+    public void setPlayOrPauseButtonText(String text)
+    {
+        try
+        {
+            playOrPauseSoundButton.setText(text);
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    public void setMaxTimeSliderValue(int maximumValue)
+    {
+        try
+        {
+            timeSlider.setMaximum(maximumValue);
+            timeSlider.repaint();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    public void setTimeSliderValue(int value)
+    {
+        try
+        {
+            timeSlider.setValue(value);
+            timeSlider.repaint();
+        }
+        catch (Exception exception)
+        {
+            exception.printStackTrace();
+        }
+    }
+
+    class ActionRunnable implements Runnable
+    {
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                long newDuration = timeSlider.getValue() * 1000000;
+                soundPlayer.stopClipFromSlider();
+                soundPlayer.start(newDuration);
+            }
+            catch (Exception exception)
+            {
+                exception.printStackTrace();
+            }
+        }
     }
 }

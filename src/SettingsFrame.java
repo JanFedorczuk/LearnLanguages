@@ -10,6 +10,8 @@ public class SettingsFrame extends MultiComponentComplexFrame
 {
     private SettingsFrame settingsFrame = this;
 
+    private JButton previousWindowButton;
+
     private JComboBox languageJComboBox;
     private JButton saveSettingsButton;
 
@@ -43,8 +45,10 @@ public class SettingsFrame extends MultiComponentComplexFrame
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
 
         Dimension buttonDimension = new Dimension(buttonWidth,buttonHeight);
+        Dimension toolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
 
         Dimension mainPanelDimension        = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions = new Dimension(mainPanelWidth, buttonHeight);
         Dimension informationPanelDimension = new Dimension(mainPanelWidth, buttonHeight * 2);
         Dimension minorPanelDimension       = new Dimension(mainPanelWidth, buttonHeight);
 
@@ -55,20 +59,25 @@ public class SettingsFrame extends MultiComponentComplexFrame
         gbc.gridwidth = 1;
 
         JPanel mainPanel = getNewPanel(mainPanelDimension, null);
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
         JPanel informationPanel = createInformationPanel(gbc, informationPanelDimension, font);
         JPanel comboBoxPanel = createComboBoxPanelPanel(gbc, minorPanelDimension, buttonDimension, font);
         JPanel buttonPanel = createButtonPanel(gbc, minorPanelDimension, buttonDimension, font);
 
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
         gbc.gridy = 0;
-        gbc.gridx = 0;
-        mainPanel.add(informationPanel, gbc);
+        gbc.weighty = 0;
+        mainPanel.add(arrowPanel, gbc);
 
         gbc.gridy = 1;
-        gbc.gridx = 0;
-        mainPanel.add(comboBoxPanel, gbc);
+        gbc.weighty = 1;
+        mainPanel.add(informationPanel, gbc);
 
         gbc.gridy = 2;
-        gbc.gridx = 0;
+        mainPanel.add(comboBoxPanel, gbc);
+
+        gbc.gridy = 3;
         mainPanel.add(buttonPanel, gbc);
 
         add(mainPanel);
@@ -83,6 +92,8 @@ public class SettingsFrame extends MultiComponentComplexFrame
         this.setLocation(((Constants.DIMENSION.width / 2) - ((int) (size * Constants.buttonWidthMultiplier * 0.875))),
                 (Constants.DIMENSION.height / 2) - ((int)(Constants.DIMENSION.height / 3)));
         this.setResizable(false);
+
+        languageJComboBox.requestFocus();
 
         addListenersToFrame();
     }
@@ -148,9 +159,13 @@ public class SettingsFrame extends MultiComponentComplexFrame
     {
         addWindowListener();
 
+        addActionListenersToArrowPanel();
+
         addActionListenerToButtonPanel();
 
-        addKeyListenerToButtonPanel();
+        addKeyListener();
+
+        addKeyListenerToArrowPanel();
 
         addNavigationKeyListeners();
     }
@@ -167,16 +182,43 @@ public class SettingsFrame extends MultiComponentComplexFrame
         });
     }
 
-    private void addKeyListenerToButtonPanel()
+    private void addKeyListener()
     {
         saveSettingsButton.addKeyListener(new KeyAdapter()
         {
             @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
                     changeSettings();
                 }
+            }
+        });
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
+            }
+        });
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
             }
         });
     }
@@ -200,7 +242,7 @@ public class SettingsFrame extends MultiComponentComplexFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                exitFrame();
+                exitProgram();
             }
         });
     }
@@ -213,7 +255,7 @@ public class SettingsFrame extends MultiComponentComplexFrame
         settingsFrame.dispose();
 
         new InformationDialog(Constants.INFORMATION, Constants.SETTINGS_SAVED_SUCCESSFULLY,
-                Constants.CLICK_OK_TO_CONTINUE, settingsFrame);
+                Constants.CLICK_OK_TO_CONTINUE, null, this);
     }
 
     public void exitFrame()

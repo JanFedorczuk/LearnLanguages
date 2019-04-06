@@ -8,6 +8,7 @@ import java.util.List;
 
 public class SearchDialog extends ComplexDialog
 {
+    private SearchDialog searchDialog;
     private ListOfWordsFrame listOfWordsFrame;
 
     private JTextField phraseTextField;
@@ -22,6 +23,8 @@ public class SearchDialog extends ComplexDialog
 
     public SearchDialog(ListOfWordsFrame listOfWordsFrame)
     {
+        this.listOfWordsFrame = listOfWordsFrame;
+
         this.listOfWordsFrame = listOfWordsFrame;
         createUI();
         setUIOptions();
@@ -174,6 +177,45 @@ public class SearchDialog extends ComplexDialog
         addWindowListener();
     }
 
+    private void addKeyListenersToButtonPanel()
+    {
+        findPhrase.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    findPhrase();
+                }
+            }
+        });
+
+        findNext.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    findElement(true);
+                }
+            }
+        });
+
+        findPrevious.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    findElement(false);
+                }
+            }
+        });
+    }
+
     private void addNavigationKeyListeners()
     {
         List<Component> verticalComponents = new ArrayList<>();
@@ -218,36 +260,6 @@ public class SearchDialog extends ComplexDialog
         {
             @Override
             public void actionPerformed(ActionEvent e)
-            {
-                findElement(false);
-            }
-        });
-    }
-
-    private void addKeyListenersToButtonPanel()
-    {
-        findPhrase.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                findPhrase();
-            }
-        });
-
-        findNext.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                findElement(true);
-            }
-        });
-
-        findPrevious.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
             {
                 findElement(false);
             }

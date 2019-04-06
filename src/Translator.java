@@ -53,8 +53,6 @@ public class Translator
             dataList.add(dataMatcherString);
         }
 
-
-
         return dataList;
     }
 
@@ -87,6 +85,8 @@ public class Translator
             }
             catch (Exception exception)
             {
+                exception.printStackTrace();
+
                 firstCharacters = "";
             }
 
@@ -229,6 +229,7 @@ public class Translator
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
 
         return wordToBeDecoded;
@@ -249,12 +250,15 @@ public class Translator
         }
         catch (InterruptedException interruptedException)
         {
+            interruptedException.printStackTrace();
         }
         catch (ExecutionException executionException)
         {
+            executionException.printStackTrace();
         }
         catch (TimeoutException timeOutException)
         {
+            timeOutException.printStackTrace();
         }
 
         return translatorRunnable.getBooleanValue();

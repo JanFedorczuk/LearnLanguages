@@ -31,17 +31,24 @@ public class SettingsManager
         try
         {
             JSONParser jsonParser = new JSONParser();
-            Object object = jsonParser.parse
-                    (new FileReader(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX + Constants.JSON_EXTENSION));
+            FileReader fileReader = new FileReader(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX +
+                    Constants.JSON_EXTENSION);
+
+            Object object = jsonParser.parse(fileReader);
+
             JSONObject jsonObject = (JSONObject) object;
 
             languageFromWhichWordIsTranslated = returnLanguage(jsonObject, Constants.KEY_FOR_FIRST_LANGUAGE);
             languageToWhichWordIsTranslated = returnLanguage(jsonObject,   Constants.KEY_FOR_SECOND_LANGUAGE);
 
+            fileReader.close();
+
             return true;
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
+
             setDefaultSettings();
             loadSettings();
 
@@ -54,24 +61,36 @@ public class SettingsManager
         try
         {
             JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse
-                    (new FileReader(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX + Constants.JSON_EXTENSION));
+
+            FileReader fileReader = new FileReader(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX +
+                    Constants.JSON_EXTENSION);
+
+            JSONObject jsonObject = (JSONObject) jsonParser.parse(fileReader);
+
             jsonObject.put(key, newLanguage);
 
-            try (FileWriter file = new FileWriter(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX
-                    + Constants.JSON_EXTENSION))
+            try
             {
-                file.write(jsonObject.toString());
-                file.close();
+                FileWriter fileWriter = new FileWriter(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX
+                        + Constants.JSON_EXTENSION);
+
+                fileWriter.write(jsonObject.toString());
+                fileWriter.close();
+
+                fileReader.close();
                 return true;
             }
             catch (Exception exception)
             {
+                fileReader.close();
+                exception.printStackTrace();
                 return false;
             }
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
+
             return false;
         }
     }
@@ -87,14 +106,16 @@ public class SettingsManager
         jsonMainObject.put(Constants.KEY_FOR_FIRST_LANGUAGE,  Constants.POLISH_LANGUAGE);
         jsonMainObject.put(Constants.KEY_FOR_SECOND_LANGUAGE, Constants.ENGLISH_LANGUAGE);
 
-        try (FileWriter file = new FileWriter(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX
-                + Constants.JSON_EXTENSION))
+        try
         {
-            file.write(jsonMainObject.toString());
-            file.close();
+            FileWriter fileWriter = new FileWriter(Constants.PROGRAM_LOCATION + Constants.SETTINGS_SUFFIX
+                    + Constants.JSON_EXTENSION);
+            fileWriter.write(jsonMainObject.toString());
+            fileWriter.close();
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 

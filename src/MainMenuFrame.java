@@ -3,15 +3,18 @@ package LearnLanguages;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainMenuFrame extends MultiComponentComplexFrame
 {
     private JButton showLists     ;
     private JButton addWord       ;
     private JButton changeSettings;
-    private JButton exitGame      ;
+    private JButton exitFrame      ;
 
     private JsonFilesManager jsonFilesManager;
 
@@ -47,7 +50,7 @@ public class MainMenuFrame extends MultiComponentComplexFrame
         showLists      = getNewButton(buttonDimension, Constants.SHOW_LISTS, font);
         addWord        = getNewButton(buttonDimension, Constants.ADD_WORD,   font);
         changeSettings = getNewButton(buttonDimension, Constants.SETTINGS,   font);
-        exitGame       = getNewButton(buttonDimension, Constants.EXIT ,      font);
+        exitFrame      = getNewButton(buttonDimension, Constants.EXIT ,      font);
 
         GridBagConstraints gbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
@@ -61,7 +64,7 @@ public class MainMenuFrame extends MultiComponentComplexFrame
         mainPanel.add(changeSettings, gbc);
         
         gbc.gridy = 3;
-        mainPanel.add(exitGame, gbc);
+        mainPanel.add(exitFrame, gbc);
 
         this.add(mainPanel);
         pack();
@@ -85,54 +88,6 @@ public class MainMenuFrame extends MultiComponentComplexFrame
         addKeyListenersToMainPanel();
 
         addNavigationKeyListeners();
-    }
-
-    private void addKeyListenersToMainPanel()
-    {
-        showLists.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    showLists();
-                }
-            }
-        });
-        addWord.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    addWord();
-                }
-            }
-        });
-        changeSettings.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    changeSettings();
-                }
-            }
-        });
-        exitGame.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    exitFrame();
-                }
-            }
-        });
     }
 
     private void addActionListenersToMainPanel()
@@ -164,12 +119,63 @@ public class MainMenuFrame extends MultiComponentComplexFrame
             }
         });
 
-        exitGame.addActionListener(new ActionListener()
+        exitFrame.addActionListener(new ActionListener()
         {
             @Override
             public void actionPerformed(ActionEvent e)
             {
                 exitFrame();
+            }
+        });
+    }
+
+    private void addKeyListenersToMainPanel()
+    {
+        showLists.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    showLists();
+                }
+            }
+        });
+
+        addWord.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addWord();
+                }
+            }
+        });
+
+        changeSettings.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    changeSettings();
+                }
+            }
+        });
+
+        exitFrame.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
             }
         });
     }
@@ -181,7 +187,7 @@ public class MainMenuFrame extends MultiComponentComplexFrame
         components.add(showLists);
         components.add(addWord);
         components.add(changeSettings);
-        components.add(exitGame);
+        components.add(exitFrame);
 
         addNavigationKeyListenersToMainComponents(components, false, true);
     }
@@ -211,7 +217,6 @@ public class MainMenuFrame extends MultiComponentComplexFrame
 
     public void exitFrame()
     {
-
         System.exit(0);
     }
 }

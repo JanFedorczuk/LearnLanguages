@@ -1,7 +1,4 @@
 package LearnLanguages;
-
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
-
 import java.util.*;
 
 public class SortingManager
@@ -60,7 +57,7 @@ public class SortingManager
 
         if(checkIfTypeOfSortingIsAccordingToDateOfAddition())
         {
-            List<List<String>> list = jsonFilesManager.returnListContainingElementsAndDates
+            List<List<String>> list = jsonFilesManager.getListContainingElementsAndDates
                     (Constants.LIST_OF_LISTS, jsonFilesManager.getListOfLists());
 
             List<String> elementsList = list.get(0);
@@ -83,12 +80,12 @@ public class SortingManager
         if(!jsonFilesManager.getListOfLists().isEmpty())
         {
             new InformationDialog(Constants.INFORMATION, Constants.SORTING_WAS_SUCCESSFUL,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
         else
         {
             new InformationDialog(Constants.INFORMATION, Constants.THERE_IS_NOTHING_TO_SORT,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
     }
 
@@ -108,9 +105,9 @@ public class SortingManager
 
         if(checkIfTypeOfSortingIsAccordingToDateOfAddition())
         {
-            String listWithWordsName = listName + Constants.WORDS_SUFFIX;
+            String listWithWordsName = listName + Constants.WORDS;
 
-            List<List<String>> list = jsonFilesManager.returnListContainingElementsAndDates
+            List<List<String>> list = jsonFilesManager.getListContainingElementsAndDates
                     (listWithWordsName, jsonFilesManager.getListOfWords());
 
             List<String> elementsList = list.get(0);
@@ -135,12 +132,12 @@ public class SortingManager
         if(!jsonFilesManager.getListOfWords().isEmpty())
         {
             new InformationDialog(Constants.INFORMATION, Constants.SORTING_WAS_SUCCESSFUL,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
         else
         {
             new InformationDialog(Constants.INFORMATION, Constants.THERE_IS_NOTHING_TO_SORT,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
 
         saveWordsOfGivenList(listOfWordsAndTheirContent);
@@ -160,7 +157,7 @@ public class SortingManager
 
         if(checkIfTypeOfSortingIsReserveAlphabetical())
         {
-            listContainingListNamesAndTheirWordsWithContent =fillListContainingListsNamesAndTheirWordsWithContent
+            listContainingListNamesAndTheirWordsWithContent = fillListContainingListsNamesAndTheirWordsWithContent
                     (listContainingListNamesAndTheirWordsWithContent, true,true);
         }
 
@@ -168,53 +165,65 @@ public class SortingManager
         {
             for(String listName: jsonFilesManager.getListOfLists())
             {
-                jsonFilesManager.setChosenListName(listName);
-
-                List<List<List<String>>> listOfWordsAndTheirContent = jsonFilesManager.fillListOfWordsAndTheirContent();
-
-                String listWithWordsName = jsonFilesManager.getChosenListName() + Constants.WORDS_SUFFIX;
-
-                List<List<String>> list = jsonFilesManager.returnListContainingElementsAndDates
-                        (listWithWordsName, jsonFilesManager.getListOfWords());
-
-                List<String> elementsList = list.get(0);
-                List<String> datesList = list.get(1);
-                Collections.sort(datesList, new Comparator<String>()
+                try
                 {
-                    public int compare(String firstDate, String secondDate)
+                    jsonFilesManager.setCurrentListName(listName);
+
+                    List<List<List<String>>> listOfWordsAndTheirContent = jsonFilesManager.fillListOfWordsAndTheirContent();
+
+                    if(listOfWordsAndTheirContent.size() != 0)
                     {
-                        return Integer.compare(elementsList.indexOf(firstDate), elementsList.indexOf(secondDate));
+                        isThereAnyWord = true;
                     }
-                });
 
-                List<List<List<String>>> copyOfListOfWordsAndTheirContent
-                        = new ArrayList<>(listOfWordsAndTheirContent);
+                    String listWithWordsName = jsonFilesManager.getCurrentListName() + Constants.WORDS;
 
-                for(String elementString : elementsList)
-                {
-                    int elementIndex = elementsList.indexOf(elementString);
+                    List<List<String>> list = jsonFilesManager.getListContainingElementsAndDates
+                            (listWithWordsName, jsonFilesManager.getListOfWords());
 
-                    int listIndex = 0;
-
-                    for(int i = 0; i < copyOfListOfWordsAndTheirContent.size(); i++)
+                    List<String> elementsList = list.get(0);
+                    List<String> datesList = list.get(1);
+                    Collections.sort(datesList, new Comparator<String>()
                     {
-                        String element = copyOfListOfWordsAndTheirContent.get(i).get(0).get(0);
-
-                        if(elementString.equals(element))
+                        public int compare(String firstDate, String secondDate)
                         {
-                            listIndex = i;
+                            return Integer.compare(elementsList.indexOf(firstDate), elementsList.indexOf(secondDate));
                         }
+                    });
+
+                    List<List<List<String>>> copyOfListOfWordsAndTheirContent
+                            = new ArrayList<>(listOfWordsAndTheirContent);
+
+                    for(String elementString : elementsList)
+                    {
+                        int elementIndex = elementsList.indexOf(elementString);
+
+                        int listIndex = 0;
+
+                        for(int i = 0; i < copyOfListOfWordsAndTheirContent.size(); i++)
+                        {
+                            String element = copyOfListOfWordsAndTheirContent.get(i).get(0).get(0);
+
+                            if(elementString.equals(element))
+                            {
+                                listIndex = i;
+                            }
+                        }
+
+                        listOfWordsAndTheirContent.set(elementIndex, copyOfListOfWordsAndTheirContent.get(listIndex));
                     }
 
-                    listOfWordsAndTheirContent.set(elementIndex, copyOfListOfWordsAndTheirContent.get(listIndex));
+                    List<Object> insideList = new ArrayList<>();
+
+                    insideList.add(listOfWordsAndTheirContent);
+                    insideList.add(jsonFilesManager.getCurrentListName());
+
+                    listContainingListNamesAndTheirWordsWithContent.add(insideList);
                 }
-
-                List<Object> insideList = new ArrayList<>();
-
-                insideList.add(listOfWordsAndTheirContent);
-                insideList.add(jsonFilesManager.getChosenListName());
-
-                listContainingListNamesAndTheirWordsWithContent.add(insideList);
+                catch (Exception exception)
+                {
+                    exception.printStackTrace();
+                }
             }
         }
 
@@ -223,12 +232,12 @@ public class SortingManager
         if(isThereAnyWord)
         {
             new InformationDialog(Constants.INFORMATION, Constants.SORTING_WAS_SUCCESSFUL,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
         else
         {
             new InformationDialog(Constants.INFORMATION, Constants.THERE_IS_NOTHING_TO_SORT,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
     }
 
@@ -281,22 +290,22 @@ public class SortingManager
 
     private void saveWordsOfGivenList(List<List<List<String>>> listOfWordsAndTheirContent)
     {
-        jsonFilesManager.deleteJsonFileContainingGivenList(jsonFilesManager.getChosenListName());
+        jsonFilesManager.deleteJsonFileContainingGivenList(jsonFilesManager.getCurrentListName());
 
-        String fileName = jsonFilesManager.getChosenListName() + jsonFilesManager.getWordsSuffix();
+        String fileName = jsonFilesManager.getCurrentListName() + Constants.WORDS;
 
         jsonFilesManager.clearJsonArray
                 (fileName, fileName);
 
-        jsonFilesManager.createJsonFileAndAddJsonObjectWithJsonArrayToIt(jsonFilesManager.getChosenListName());
+        jsonFilesManager.createJsonFileAndAddJsonObjectWithJsonArrayToIt(jsonFilesManager.getCurrentListName());
 
         for(List<List<String>> list : listOfWordsAndTheirContent)
         {
             jsonFilesManager.setContentOfGivenWord(list);
 
-            jsonFilesManager.saveDataInJsonList_Content(jsonFilesManager.getChosenListName());
+            jsonFilesManager.saveDataInJsonList_Content(jsonFilesManager.getCurrentListName());
 
-            jsonFilesManager.saveDataInJsonList_Words(jsonFilesManager.getChosenListName(), null,
+            jsonFilesManager.saveDataInJsonList_Words(jsonFilesManager.getCurrentListName(), null,
                     false);
         }
     }
@@ -308,23 +317,23 @@ public class SortingManager
             List<List<List<String>>> listOfWordsAndTheirContent = (List<List<List<String>>>) list.get(0);
             String listName = (String) list.get(1);
 
-            jsonFilesManager.setChosenListName(listName);
+            jsonFilesManager.setCurrentListName(listName);
 
-            jsonFilesManager.deleteJsonFileContainingGivenList(jsonFilesManager.getChosenListName());
+            jsonFilesManager.deleteJsonFileContainingGivenList(jsonFilesManager.getCurrentListName());
 
-            String listWithWordsName = listName + Constants.WORDS_SUFFIX;
+            String listWithWordsName = listName + Constants.WORDS;
             jsonFilesManager.clearJsonArray(listWithWordsName, listWithWordsName);
 
 
-            jsonFilesManager.createJsonFileAndAddJsonObjectWithJsonArrayToIt(jsonFilesManager.getChosenListName());
+            jsonFilesManager.createJsonFileAndAddJsonObjectWithJsonArrayToIt(jsonFilesManager.getCurrentListName());
 
             for(List<List<String>> minorList : listOfWordsAndTheirContent)
             {
                 jsonFilesManager.setContentOfGivenWord(minorList);
 
-                jsonFilesManager.saveDataInJsonList_Content(jsonFilesManager.getChosenListName());
+                jsonFilesManager.saveDataInJsonList_Content(jsonFilesManager.getCurrentListName());
                 jsonFilesManager.saveDataInJsonList_Words
-                        (jsonFilesManager.getChosenListName(), null, false);
+                        (jsonFilesManager.getCurrentListName(), null, false);
             }
         }
     }
@@ -334,7 +343,7 @@ public class SortingManager
     {
         for(String listName : jsonFilesManager.getListOfLists())
         {
-            jsonFilesManager.setChosenListName(listName);
+            jsonFilesManager.setCurrentListName(listName);
 
             List<List<List<String>>> list = new ArrayList<>();
             list = jsonFilesManager.fillListOfWordsAndTheirContent();
@@ -359,11 +368,13 @@ public class SortingManager
             List<Object> insideList = new ArrayList<>();
 
             insideList.add(list);
-            insideList.add(jsonFilesManager.getChosenListName());
+            insideList.add(jsonFilesManager.getCurrentListName());
 
             listContainingListNamesAndTheirWordsWithContent.add(insideList);
         }
 
         return listContainingListNamesAndTheirWordsWithContent;
     }
+
+
 }

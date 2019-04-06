@@ -10,6 +10,8 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 {
     private AddOrChooseListOfWordsFrame addOrChooseListOfWordsFrame = this;
 
+    private JButton previousWindowButton;
+
     private JButton addNewListButton;
     private JButton deleteListButton;
     private JButton modifyListButton;
@@ -19,6 +21,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
     private JButton deleteWordButton;
     private JButton moveWordUpButton;
     private JButton moveWordDownButton;
+    private JButton createOrModifySoundFiles;
 
     private JToolBar wordToolbar;
     private JComboBox wordComboBox;
@@ -30,10 +33,11 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 
     private JsonFilesManager jsonFilesManager;
     private WindowsManager windowsManager;
+    private SoundFilesManager soundFilesManager;
     private List<List<String>> wordAndItsContent;
 
     public AddOrChooseListOfWordsFrame(JsonFilesManager jsonFilesManager, WindowsManager windowsManager,
-                                        List<List<String>> wordAndItsContent)
+                                       SoundFilesManager soundFilesManager, List<List<String>> wordAndItsContent)
     {
         this.wordAndItsContent = wordAndItsContent;
 
@@ -43,11 +47,11 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         this.jsonFilesManager = jsonFilesManager;
         this.windowsManager = windowsManager;
-
+        this.soundFilesManager = soundFilesManager;
+        
         createUI();
         setUIOptions();
         displayUI();
-
     }
 
     private void createUI()
@@ -64,41 +68,64 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 
         int fontSize     = (int) (size * Constants.fontMultiplier);
 
-        int wordToolbarButtonWidth = (buttonWidth / 5 * 4);
 
         Dimension mainPanelDimension   = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions   = new Dimension(mainPanelWidth, buttonHeight);
         Dimension listPanelDimension   = new Dimension(mainPanelWidth, (int)(size * 0.632));
         Dimension wordPanelDimension   = new Dimension(mainPanelWidth, (int)(size * 0.456));
         Dimension buttonPanelDimension = new Dimension(mainPanelWidth, buttonHeight);
 
         Dimension buttonDimension            = new Dimension(buttonWidth, buttonHeight);
-        Dimension wordToolbarDimension       = new Dimension(wordToolbarButtonWidth, buttonHeight);
+        Dimension toolBarButtonDimension     = new Dimension((int)(buttonWidth / 5), buttonHeight);
         Dimension listToolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
-        Dimension wordToolBarButtonDimension = new Dimension((wordToolbarButtonWidth / 3), buttonHeight);
+
+        int wordToolbarButtonWidth = buttonWidth / 5;
+        Dimension wordToolbarDimension;
+
+        if(windowsManager.getIfWordIsBeingModified())
+        {
+            wordToolbarDimension       = new Dimension(wordToolbarButtonWidth  * 3, buttonHeight);
+        }
+        else
+        {
+            wordToolbarDimension       = new Dimension(wordToolbarButtonWidth * 4, buttonHeight);
+        }
+
+        Dimension wordToolBarButtonDimension = new Dimension((wordToolbarButtonWidth), buttonHeight);
 
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
+        Font toolbarButtonFont = new Font(Constants.FONT_NAME, Font.PLAIN, fontSize);
 
         GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         JPanel mainPanel = getNewPanel(mainPanelDimension, null);
 
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
+
         JPanel listPanel = createListPanel(componentGbc, listPanelDimension, listToolBarButtonDimension,
-                buttonDimension, font);
+                buttonDimension, font, toolbarButtonFont);
 
         JPanel wordPanel = createWordPanel(componentGbc, wordPanelDimension, wordToolbarDimension,
-                wordToolBarButtonDimension, buttonDimension, font);
+                wordToolBarButtonDimension, buttonDimension, font, toolbarButtonFont);
 
         JPanel buttonPanel = createButtonPanel(componentGbc, buttonPanelDimension, buttonDimension, font);
 
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
         GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
-        
+
         panelGbc.gridy = 0;
-        mainPanel.add(listPanel, panelGbc);
+        panelGbc.weighty = 0;
+        mainPanel.add(arrowPanel, panelGbc);
 
         panelGbc.gridy = 1;
-        mainPanel.add(wordPanel, panelGbc);
+        panelGbc.weighty = 1;
+        mainPanel.add(listPanel, panelGbc);
 
         panelGbc.gridy = 2;
+        mainPanel.add(wordPanel, panelGbc);
+
+        panelGbc.gridy = 3;
         mainPanel.add(buttonPanel, panelGbc);
 
         add(mainPanel);
@@ -121,7 +148,8 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
     }
 
     private JPanel createListPanel(GridBagConstraints gbc, Dimension listPanelDimension,
-                                   Dimension listToolBarButtonDimension, Dimension buttonDimension, Font font)
+                                   Dimension listToolBarButtonDimension, Dimension buttonDimension, Font font,
+                                   Font toolbarButtonFont)
     {
         JPanel listPanel = getNewPanel(listPanelDimension, null);
 
@@ -133,7 +161,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         gbc.gridy = 1;
 
         listToolbar = getNewToolbar(buttonDimension, false, true);
-        addButtonsToListToolbar(listToolBarButtonDimension, font);
+        addButtonsToListToolbar(listToolBarButtonDimension, toolbarButtonFont);
 
         listPanel.add(listToolbar, gbc);
 
@@ -153,7 +181,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 
     private JPanel createWordPanel(GridBagConstraints gbc, Dimension wordPanelDimension,
                                    Dimension wordToolbarDimension, Dimension wordToolBarButtonDimension,
-                                   Dimension buttonDimension, Font font)
+                                   Dimension buttonDimension, Font font, Font toolbarButtonFont)
     {
         JPanel wordPanel = getNewPanel(wordPanelDimension, null);
 
@@ -166,7 +194,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         gbc.gridy = 1;
 
         wordToolbar = getNewToolbar(wordToolbarDimension, false, true);
-        addButtonsToWordToolbar(wordToolBarButtonDimension, font);
+        addButtonsToWordToolbar(wordToolBarButtonDimension, toolbarButtonFont);
         wordPanel.add(wordToolbar, gbc);
 
         gbc.gridy = 2;
@@ -207,6 +235,12 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         moveListDownButton = getNewButton(listToolbarButtonDimension, Constants.MOVE_DOWN, font);
         modifyListButton   = getNewButton(listToolbarButtonDimension, Constants.MODIFY,    font);
 
+        addNewListButton.setToolTipText(Constants.ADD_LIST);
+        deleteListButton.setToolTipText(Constants.DELETE_LIST);
+        moveListUpButton.setToolTipText(Constants.MOVE_LIST_UP);
+        moveListDownButton.setToolTipText(Constants.MOVE_LIST_DOWN);
+        modifyListButton.setToolTipText(Constants.MODIFY_LIST);
+
         listToolbar.add(addNewListButton);
         listToolbar.add(deleteListButton);
         listToolbar.add(moveListUpButton);
@@ -216,29 +250,217 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 
     private void addButtonsToWordToolbar(Dimension wordToolBarButtonDimension, Font font)
     {
-        deleteWordButton   = getNewButton(wordToolBarButtonDimension, Constants.DELETE,    font);
-        moveWordUpButton   = getNewButton(wordToolBarButtonDimension, Constants.MOVE_UP,   font);
-        moveWordDownButton = getNewButton(wordToolBarButtonDimension, Constants.MOVE_DOWN, font);
+        deleteWordButton         = getNewButton(wordToolBarButtonDimension, Constants.DELETE,    font);
+        moveWordUpButton         = getNewButton(wordToolBarButtonDimension, Constants.MOVE_UP,   font);
+        moveWordDownButton       = getNewButton(wordToolBarButtonDimension, Constants.MOVE_DOWN, font);
+
+        deleteWordButton.setToolTipText(Constants.DELETE_WORD);
+        moveWordUpButton.setToolTipText(Constants.MOVE_WORD_UP);
+        moveWordDownButton.setToolTipText(Constants.MOVE_WORD_DOWN);
 
         wordToolbar.add(deleteWordButton);
         wordToolbar.add(moveWordUpButton);
         wordToolbar.add(moveWordDownButton);
+
+        if(!windowsManager.getIfWordIsBeingModified())
+        {
+            createOrModifySoundFiles = getNewButton(wordToolBarButtonDimension, Constants.SOUND_ICON, font);
+
+            createOrModifySoundFiles.setToolTipText(Constants.ADD_SOUND);
+
+            wordToolbar.add(createOrModifySoundFiles);
+        }
     }
 
     private void addListenersToFrame()
     {
         addActionListeners();
-        addKeyListeners();
-
+        addKeyListenersTo();
         addNavigationKeyListeners();
         addWindowListener();
     }
 
     private void addActionListeners()
     {
+        addActionListenersToArrowPanel();
         addActionListenersToListPanel();
         addActionListenersToWordPanel();
         addActionListenerToButtonPanel();
+    }
+
+    private void addKeyListenersTo()
+    {
+        addKeyListenerToArrowPanel();
+        addKeyListenersToListPanel();
+        addKeyListenersToWordPanel();
+        addKeyListenerToButtonPanel();
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToListPanel()
+    {
+        addNewListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addNewList();
+                    addNewListButton.requestFocus();
+                }
+            }
+        });
+
+        deleteListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteList();
+                    deleteListButton.requestFocus();
+                }
+            }
+        });
+
+        moveListUpButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveListUp();
+                    moveListUpButton.requestFocus();
+                }
+            }
+        });
+
+        moveListDownButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveListDown();
+                    moveListDownButton.requestFocus();
+                }
+            }
+        });
+
+        modifyListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    modifyList();
+                    modifyListButton.requestFocus();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToWordPanel()
+    {
+        deleteWordButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteWord();
+                    deleteWordButton.requestFocus();
+                }
+            }
+        });
+
+        moveWordUpButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveWordUp();
+                    moveWordUpButton.requestFocus();
+                }
+            }
+        });
+
+        moveWordDownButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveWordDown();
+                    moveWordDownButton.requestFocus();
+                }
+            }
+        });
+
+        if(createOrModifySoundFiles != null)
+        {
+            createOrModifySoundFiles.addKeyListener(new KeyAdapter()
+            {
+                @Override
+                public void keyReleased(KeyEvent e)
+                {
+                    if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                    {
+                        dispose();
+                        new AddSoundFilesFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
+                    }
+                }
+            });
+        }
+    }
+
+    private void addKeyListenerToButtonPanel()
+    {
+        saveDataButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    saveData();
+                }
+            }
+        });
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
     }
 
     private void addActionListenersToListPanel()
@@ -319,6 +541,19 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
                 moveWordDown();
             }
         });
+
+        if(createOrModifySoundFiles != null)
+        {
+            createOrModifySoundFiles.addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    dispose();
+                    new AddSoundFilesFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
+                }
+            });
+        }
     }
 
     private void addActionListenerToButtonPanel()
@@ -329,138 +564,6 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
             public void actionPerformed(ActionEvent e)
             {
                 saveData();
-            }
-        });
-    }
-
-    private void addKeyListeners()
-    {
-        addKeyListenersToListPanel();
-        addKeyListenersToWordPanel();
-        addKeyListenerToButtonPanel();
-    }
-
-    private void addKeyListenersToListPanel()
-    {
-        addNewListButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    addNewList();
-                    addNewListButton.requestFocus();
-                }
-            }
-        });
-
-        deleteListButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    deleteList();
-                    deleteListButton.requestFocus();
-                }
-            }
-        });
-
-        moveListUpButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveListUp();
-                    moveListUpButton.requestFocus();
-                }
-            }
-        });
-
-        moveListDownButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveListDown();
-                    moveListDownButton.requestFocus();
-                }
-            }
-        });
-
-        modifyListButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    modifyList();
-                    modifyListButton.requestFocus();
-                }
-            }
-        });
-    }
-
-    private void addKeyListenersToWordPanel()
-    {
-        deleteWordButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    deleteWord();
-                    deleteWordButton.requestFocus();
-                }
-            }
-        });
-
-        moveWordUpButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveWordUp();
-                    moveWordUpButton.requestFocus();
-                }
-            }
-        });
-
-        moveWordDownButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveWordDown();
-                    moveWordDownButton.requestFocus();
-                }
-            }
-        });
-    }
-
-    private void addKeyListenerToButtonPanel()
-    {
-        saveDataButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    saveData();
-                }
             }
         });
     }
@@ -489,8 +592,9 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         listButtons.add(moveListDownButton);
         listButtons.add(modifyListButton);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(listButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(listButtons, components, 0, false);
+
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(listButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(listButtons, components, 0, false);
 
         List<Component> wordButtons = new ArrayList<>();
 
@@ -498,8 +602,13 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         wordButtons.add(moveWordUpButton);
         wordButtons.add(moveWordDownButton);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(wordButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(wordButtons, components, 3, false);
+        if(createOrModifySoundFiles != null)
+        {
+            wordButtons.add(createOrModifySoundFiles);
+        }
+
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(wordButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(wordButtons, components, 3, false);
     }
 
     private void addWindowListener()
@@ -508,16 +617,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         {
             public void windowClosing(WindowEvent e)
             {
-                addOrChooseListOfWordsFrame.dispose();
-
-                if(windowsManager.getIfWordIsBeingModified())
-                {
-                    new ListOfWordsFrame(jsonFilesManager, windowsManager);
-                }
-                else
-                {
-                    new OptionsFrame(jsonFilesManager, windowsManager, wordAndItsContent);
-                }
+                exitProgram();
             }
         });
     }
@@ -531,13 +631,13 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
             listTextField.setText(chosenListName);
 
             jsonFilesManager.setCurrentListIndex(listComboBox.getSelectedIndex());
-            jsonFilesManager.setChosenListName(chosenListName);
+            jsonFilesManager.setCurrentListName(chosenListName);
 
             jsonFilesManager.setListOfWords();
 
             if(jsonFilesManager.checkIfJsonFileExists(chosenListName, false))
             {
-                if(jsonFilesManager.checkIfListOfWordsIsEmpty(chosenListName))
+                if(jsonFilesManager.checkIfJsonListOfWordsIsEmpty(chosenListName))
                 {
                     changeAvailabilityAndStateOfGivenElements(false, wordComboBox, null,
                             jsonFilesManager.getListOfWords());
@@ -564,6 +664,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -589,44 +690,56 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
     {
         try
         {
-            int listIndex = listComboBox.getSelectedIndex();
-            jsonFilesManager.removeListFromJSONListsFileAndDeleteJSONListFile(listIndex);
-            jsonFilesManager.setListOfLists();
+            String filePath = jsonFilesManager.getCurrentListName() + "/";
 
-            if(jsonFilesManager.getListOfLists().size() == 0)
+            if(jsonFilesManager.checkIfFolderExists(filePath))
             {
-                changeAvailabilityAndStateOfGivenElements(false, listComboBox, listTextField,
-                        jsonFilesManager.getListOfLists());
-
-                changeAvailabilityAndStateOfGivenElements(false, wordComboBox, null,
-                        jsonFilesManager.getListOfWords());
+                jsonFilesManager.deleteFileAndAllItsContent(filePath);
             }
-            else
+
+            if(jsonFilesManager.getListOfLists().size() != 0)
             {
-                changeAvailabilityAndStateOfGivenElements(true, listComboBox, listTextField,
-                        jsonFilesManager.getListOfLists());
+                int listIndex = listComboBox.getSelectedIndex();
+                jsonFilesManager.removeListFromJSONListsFileAndDeleteJSONListFile(listIndex);
+                jsonFilesManager.setListOfLists();
 
-                if(listIndex >= jsonFilesManager.getListOfLists().size())
+                if(jsonFilesManager.getListOfLists().size() == 0)
                 {
-                    listIndex = jsonFilesManager.getListOfLists().size() - 1;
-                }
-                jsonFilesManager.setCurrentListIndex(listIndex);
+                    changeAvailabilityAndStateOfGivenElements(false, listComboBox, listTextField,
+                            jsonFilesManager.getListOfLists());
 
-                updateSelectedIndexAndFocusOfComboBox(listComboBox, jsonFilesManager.getCurrentListIndex());
-
-                if(jsonFilesManager.getListOfWords().size() != 0)
-                {
-                    changeAvailabilityAndStateOfGivenElements(true, wordComboBox, null,
+                    changeAvailabilityAndStateOfGivenElements(false, wordComboBox, null,
                             jsonFilesManager.getListOfWords());
+                }
+                else
+                {
+                    changeAvailabilityAndStateOfGivenElements(true, listComboBox, listTextField,
+                            jsonFilesManager.getListOfLists());
 
-                    jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
+                    if(listIndex > jsonFilesManager.getListOfLists().size() - 1)
+                    {
+                        listIndex = jsonFilesManager.getListOfLists().size() - 1;
+                    }
+                    jsonFilesManager.setCurrentListIndex(listIndex);
+                    jsonFilesManager.setCurrentListName(jsonFilesManager.getListOfLists().get(listIndex));
 
-                    wordComboBox.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
+                    updateSelectedIndexAndFocusOfComboBox(listComboBox, jsonFilesManager.getCurrentListIndex());
+
+                    if(jsonFilesManager.getListOfWords().size() != 0)
+                    {
+                        changeAvailabilityAndStateOfGivenElements(true, wordComboBox, null,
+                                jsonFilesManager.getListOfWords());
+
+                        jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
+
+                        wordComboBox.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
+                    }
                 }
             }
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -650,6 +763,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -677,31 +791,48 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
             String previousFileName = jsonFilesManager.getListOfLists().get(listComboBox.getSelectedIndex());
 
             String newListName = listTextField.getText();
+
+            String pathStringForJsonFiles = Constants.PROGRAM_LOCATION + previousFileName + "/";
+            String newPathStringForJsonFiles = Constants.PROGRAM_LOCATION + newListName + "/";
+
+            jsonFilesManager.renameFile(pathStringForJsonFiles, newPathStringForJsonFiles);
+
             int selectedIndex = listComboBox.getSelectedIndex();
 
             if(jsonFilesManager.modifyListInJSONListsFileAndInJSONList(previousFileName, newListName, selectedIndex))
             {
+
                 changeAvailabilityAndStateOfGivenElements(true, listComboBox, listTextField,
                         jsonFilesManager.getListOfLists());
 
                 jsonFilesManager.setCurrentListIndex(selectedIndex);
+                jsonFilesManager.setCurrentListName(newListName);
                 listComboBox.setSelectedIndex(jsonFilesManager.getCurrentListIndex());
             }
             else
             {
-                listTextField.setText(Constants.CATEGORY_ALREADY_EXISTS);
+                listTextField.setText(Constants.LIST_ALREADY_EXISTS);
             }
+
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
-
     }
 
     private void deleteWord()
     {
         try
         {
+            String filePath = jsonFilesManager.getCurrentListName() + "/" +
+                    jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/";
+
+            if(jsonFilesManager.checkIfFolderExists(filePath))
+            {
+                jsonFilesManager.deleteFileAndAllItsContent(filePath);
+            }
+
             if(jsonFilesManager.getListOfWords().size() != 0)
             {
                 int listIndex = listComboBox.getSelectedIndex();
@@ -737,6 +868,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -761,6 +893,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
 
     }
@@ -786,6 +919,7 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -807,13 +941,21 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
 
                 updateSelectedIndexAndFocusOfComboBox(wordComboBox, jsonFilesManager.getCurrentWordIndex());
 
-                new InformationDialog(Constants.INFORMATION, Constants.WORD_SUCCESSFULLY_SAVE_IN_GIVEN_LIST,
-                        Constants.CLICK_OK_TO_CONTINUE, null);
+                if(checkIfMp3FilesAreNeeded())
+                {
+                    addWavFiles();
+                }
+                else
+                {
+                    new InformationDialog(Constants.INFORMATION, Constants.WORD_SUCCESSFULLY_SAVED_IN_GIVEN_LIST,
+                            Constants.CLICK_OK_TO_CONTINUE, null,this);
+                }
             }
             else
             {
                 new InformationDialog(Constants.ERROR, Constants.GIVEN_WORD_IS_ALREADY_ON_THE_SELECTED_LIST,
-                        Constants.PLEASE_WRITE_NEW_WORD_OR_MODIFY_THE_OLD_ONE, null);
+                        Constants.PLEASE_WRITE_NEW_WORD_OR_MODIFY_THE_OLD_ONE, null,
+                        null);
             }
 
         }
@@ -821,7 +963,50 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         {
             new InformationDialog(Constants.INFORMATION,
                     Constants.NO_LIST_EXISTS,
-                    Constants.PLEASE_CREATE_A_LIST, null);
+                    Constants.PLEASE_CREATE_A_LIST, null,null);
+
+            exception.printStackTrace();
+        }
+    }
+
+    private void addWavFiles()
+    {
+        if(!soundFilesManager.getSoundFilesContent().isEmpty())
+        {
+            List<String> filesNames = jsonFilesManager.getFilesNamesJsonArray(jsonFilesManager.
+                    getCurrentListName() + "/" + jsonFilesManager.getListOfWords().get(jsonFilesManager.
+                    getCurrentWordIndex()) + "/");
+
+            List<List<String>> soundFilesContent = soundFilesManager.getSoundFilesContent();
+
+            boolean newCreationOption = soundFilesManager.getIfFileCreationOptionIsCreateBulkFiles();
+            boolean oldCreationOption = jsonFilesManager.getFilesBulkCreationValue(
+                    jsonFilesManager.getCurrentListName() + "/" + jsonFilesManager.getListOfWords().get
+                            (jsonFilesManager.getCurrentWordIndex()) + "/");
+
+            boolean doFilesHaveIdenticalOrder = jsonFilesManager.checkIfFilesHaveIdenticalOrder
+                    (soundFilesContent, filesNames);
+
+            List<List<Boolean>> comparisonList = jsonFilesManager.getFilesComparisonList
+                    (soundFilesContent, filesNames);
+
+            boolean doesAnyListContainFalse = jsonFilesManager.checkIfAnyListContainsFalse(comparisonList);
+
+            if((doesAnyListContainFalse) || (newCreationOption != oldCreationOption) ||
+                    (!doFilesHaveIdenticalOrder))
+            {
+                ProgressDialog progressDialog = new ProgressDialog(jsonFilesManager, soundFilesManager, windowsManager);
+                soundFilesManager.setComparisonList(comparisonList);
+                soundFilesManager.setIfFilesHaveIdenticalOrder(doFilesHaveIdenticalOrder);
+                soundFilesManager.setIndexesOfFilesWhichNamesShouldBeChanged
+                        (jsonFilesManager.getIndexesOfFilesWhichNamesShouldBeChanged());
+                progressDialog.startNewThread(this);
+            }
+            else
+            {
+                new InformationDialog(Constants.INFORMATION, Constants.FILES_ARE_THE_SAME,
+                        Constants.TO_REPLACE_THEM_MODIFY_THEM, null,null);
+            }
         }
     }
 
@@ -835,7 +1020,19 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         }
         else
         {
-            new OptionsFrame(jsonFilesManager, windowsManager, wordAndItsContent);
+            new WordFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
+        }
+    }
+
+    private boolean checkIfMp3FilesAreNeeded()
+    {
+        if(!soundFilesManager.getSoundFilesContent().isEmpty())
+        {
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -914,6 +1111,11 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
     {
         comboBox.setSelectedIndex(index);
         comboBox.requestFocus();
+    }
+
+    public WindowsManager getWindowsManager()
+    {
+        return windowsManager;
     }
 }
 

@@ -10,6 +10,8 @@ public class AddWordFrame extends ComplexFrame
 {
     private AddWordFrame addWordFrame = this;
 
+    private JButton previousWindowButton;
+
     private JButton addWordManuallyButton = new JButton(Constants.MANUALLY);
     private JButton addWordAutomaticallyButton = new JButton(Constants.AUTOMATICALLY);
 
@@ -40,23 +42,33 @@ public class AddWordFrame extends ComplexFrame
         int mainPanelHeight = (int) (size * 0.56);
 
         Dimension mainPanelDimension        = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions      = new Dimension(mainPanelWidth, buttonHeight);
         Dimension selectionPanelDimension   = new Dimension(mainPanelWidth, buttonHeight);
         Dimension informationPanelDimension = new Dimension(mainPanelWidth, buttonHeight * 2);
 
         Dimension buttonDimension = new Dimension(buttonWidth, buttonHeight);
+        Dimension toolBarButtonDimension     = new Dimension((int)(buttonWidth / 5), buttonHeight);
 
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
 
         GridBagConstraints gbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
         JPanel mainPanel = getNewPanel(mainPanelDimension, null);
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
         JPanel informationPanel = getNewInformationPanel(gbc, informationPanelDimension, font);
         JPanel selectionPanel = getNewSelectionPanel(gbc, selectionPanelDimension, buttonDimension, font);
 
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
         gbc.gridy = 0;
-        mainPanel.add(informationPanel, gbc);
+        gbc.weighty = 0;
+        mainPanel.add(arrowPanel, gbc);
 
         gbc.gridy = 1;
+        gbc.weighty = 1;
+        mainPanel.add(informationPanel, gbc);
+
+        gbc.gridy = 2;
         mainPanel.add(selectionPanel, gbc);
 
         add(mainPanel, gbc);
@@ -71,6 +83,8 @@ public class AddWordFrame extends ComplexFrame
                 (Constants.DIMENSION.height / 2) - ((int) (Constants.DIMENSION.height / 3.5)));
 
         this.setResizable(false);
+
+        addWordAutomaticallyButton.requestFocus();
 
         addListenersToFrame();
     }
@@ -110,17 +124,30 @@ public class AddWordFrame extends ComplexFrame
         return selectionPanel;
     }
 
-
     private void addListenersToFrame()
     {
+        addActionListenersToArrowPanel();
 
         addActionListenersToSelectionPanel();
-        addKeyListenersToSelectionPanel();
+
+        addKeyListeners();
 
         addNavigationKeyListeners();
 
         addWindowListener();
 
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
     }
 
     private void addActionListenersToSelectionPanel()
@@ -145,14 +172,16 @@ public class AddWordFrame extends ComplexFrame
 
     }
 
-    private void addKeyListenersToSelectionPanel()
+    private void addKeyListeners()
     {
+        addKeyListenerToArrowPanel();
+
         addWordManuallyButton.addKeyListener(new KeyAdapter()
         {
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
                     addWordManually();
                 }
@@ -164,9 +193,23 @@ public class AddWordFrame extends ComplexFrame
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
                     addWordAutomatically();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
                 }
             }
         });
@@ -184,47 +227,33 @@ public class AddWordFrame extends ComplexFrame
 
     private void addWindowListener()
     {
-        if(windowsManager.getIfWordIsBeingEnteredFromMenu())
+        this.addWindowListener(new WindowAdapter()
         {
-            this.addWindowListener(new WindowAdapter()
+            @Override
+            public void windowClosing(WindowEvent e)
             {
-                @Override
-                public void windowClosing(WindowEvent e)
-                {
-                    addWordFrame.dispose();
-                    new MainMenuFrame(jsonFilesManager).setVisible(true);
-                }
-            });
-        }
-        else
-        {
-            this.addWindowListener(new WindowAdapter()
-            {
-                @Override
-                public void windowClosing(WindowEvent e)
-                {
-                    addWordFrame.dispose();
-                    new ListOfWordsFrame(jsonFilesManager, windowsManager).setVisible(true);
-                }
-            });
-        }
+                exitProgram();
+            }
+        });
     }
 
     private void addWordManually()
     {
         addWordFrame.dispose();
-        new AddOrEditWordManuallyFrame(jsonFilesManager, windowsManager, new ArrayList<>());
+
+        new AddOrEditWordManuallyFrame(jsonFilesManager, windowsManager, new SoundFilesManager(jsonFilesManager),
+                new ArrayList<>());
     }
 
     private void addWordAutomatically()
     {
         addWordFrame.dispose();
-        new AddWordAutomaticallyFrame(jsonFilesManager, windowsManager);
+        new AddWordAutomaticallyFrame(jsonFilesManager, windowsManager, new SoundFilesManager(jsonFilesManager));
     }
 
     public void exitFrame()
     {
-        addWordFrame.dispose();
+        this.dispose();
 
         if(windowsManager.getIfWordIsBeingEnteredFromMenu())
         {

@@ -3,6 +3,7 @@ package LearnLanguages;
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,23 +47,30 @@ public class TranslatorRunnable implements Runnable
             }
             catch (ArrayIndexOutOfBoundsException arrayIndexOutOfBoundsException)
             {
+                arrayIndexOutOfBoundsException.printStackTrace();
+
                 list.add(false);
                 list.add(arrayIndexOutOfBoundsException);
             }
             catch (IndexOutOfBoundsException indexOutOfBoundsException)
             {
+                indexOutOfBoundsException.printStackTrace();
+
                 list.add(false);
                 list.add(indexOutOfBoundsException);
-                indexOutOfBoundsException.printStackTrace();
             }
         }
         catch(FileNotFoundException fileNotFoundException)
         {
+            fileNotFoundException.printStackTrace();
+
             list.add(false);
             list.add(fileNotFoundException);
         }
         catch(Exception exception)
         {
+            exception.printStackTrace();
+
             list.add(false);
             list.add(exception);
         }
@@ -77,6 +85,7 @@ public class TranslatorRunnable implements Runnable
             }
             catch (IOException iOException)
             {
+                iOException.printStackTrace();
             }
         }
 
@@ -96,8 +105,9 @@ public class TranslatorRunnable implements Runnable
 
             inputStream = url.openStream();
             String line;
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             StringBuffer stringBuffer = new StringBuffer();
+
 
             while ((line = bufferedReader.readLine()) != null)
             {
@@ -108,6 +118,8 @@ public class TranslatorRunnable implements Runnable
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
+
             throw exception;
         }
         finally
@@ -133,7 +145,6 @@ public class TranslatorRunnable implements Runnable
 
     public String getDataString()
     {
-
         return dataString;
     }
 }

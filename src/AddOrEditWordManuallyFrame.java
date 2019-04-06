@@ -10,6 +10,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 {
     private AddOrEditWordManuallyFrame addOrEditWordManuallyFrame = this;
 
+    private JButton previousWindowButton;
+
     private JTextField     wordTextField;
 
     private JToolBar   categoryToolBar  ;
@@ -32,20 +34,21 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
     private JButton moveElementDown;
     private JButton modifyElement;
 
-    private JButton actionJButton;
+    private JButton actionButton;
 
     private List<List<String>> wordAndItsContent;
 
-    private WindowAdapter windowAdapter;
-
     private JsonFilesManager jsonFilesManager;
     private WindowsManager   windowsManager;
+    private SoundFilesManager soundFilesManager;
 
     public AddOrEditWordManuallyFrame
-            (JsonFilesManager jsonFilesManager, WindowsManager windowsManager, List<List<String>> wordAndItsContent)
+            (JsonFilesManager jsonFilesManager, WindowsManager windowsManager, SoundFilesManager soundFilesManager,
+             List<List<String>> wordAndItsContent)
     {
         this.wordAndItsContent = wordAndItsContent;
         this.jsonFilesManager = jsonFilesManager;
+        this.soundFilesManager = soundFilesManager;
         this.windowsManager = windowsManager;
 
         createUI();
@@ -69,42 +72,55 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
 
+        Font toolbarButtonFont = new Font(Constants.FONT_NAME, Font.PLAIN, fontSize);
+
         Dimension mainPanelDimension     = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions   = new Dimension(mainPanelWidth, buttonHeight);
         Dimension wordPanelDimension     = new Dimension(mainPanelWidth, (int)Math.round(mainPanelHeight * 0.1178451));
         Dimension categoryPanelDimension = new Dimension(mainPanelWidth, (int)Math.round(mainPanelHeight * 0.2659932));
         Dimension elementsPanelDimension = new Dimension(mainPanelWidth, (int)Math.round(mainPanelHeight * 0.3535353));
         Dimension buttonPanelDimension   = new Dimension(mainPanelWidth, buttonHeight);
 
         Dimension buttonDimension            = new Dimension(buttonWidth, buttonHeight);
-        Dimension toolBarButtonDimension     = new Dimension((int)(buttonWidth / 4), buttonHeight);
+        Dimension toolBarButtonDimension     = new Dimension((int)(buttonWidth / 5), buttonHeight);
         Dimension elementScrollPaneDimension = new Dimension((int)buttonWidth * 5 / 4, buttonHeight * 3);
 
         GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         JPanel mainPanel = getNewPanel(mainPanelDimension, null);
 
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
+
         JPanel wordPanel = getNewWordPanel(componentGbc, wordPanelDimension,
                 buttonDimension, font);
 
         JPanel elementsPanel = getNewElementsPanel(componentGbc,elementsPanelDimension,
-                buttonDimension, toolBarButtonDimension, elementScrollPaneDimension, font);
+                buttonDimension, toolBarButtonDimension, elementScrollPaneDimension, font, toolbarButtonFont);
 
         JPanel categoryPanel = getNewCategoriesPanel(componentGbc, categoryPanelDimension,
-                buttonDimension, toolBarButtonDimension, font);
+                buttonDimension, toolBarButtonDimension, font, toolbarButtonFont);
+
         JPanel buttonPanel = getNewButtonPanel(componentGbc, buttonPanelDimension, buttonDimension, font);
+
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
 
         GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
         panelGbc.gridy = 0;
-        mainPanel.add(wordPanel, panelGbc);
+        panelGbc.weighty = 0;
+        mainPanel.add(arrowPanel, panelGbc);
 
         panelGbc.gridy = 1;
-        mainPanel.add(categoryPanel, panelGbc);
+        panelGbc.weighty = 1;
+        mainPanel.add(wordPanel, panelGbc);
 
         panelGbc.gridy = 2;
-        mainPanel.add(elementsPanel, panelGbc);
+        mainPanel.add(categoryPanel, panelGbc);
 
         panelGbc.gridy = 3;
+        mainPanel.add(elementsPanel, panelGbc);
+
+        panelGbc.gridy = 4;
         mainPanel.add(buttonPanel, panelGbc);
 
         add(mainPanel);
@@ -116,7 +132,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         this.setTitle(Constants.PROGRAM_NAME);
 
         this.setLocation(((Constants.DIMENSION.width / 2) - ((int)(buttonWidth * 0.875))),
-                (Constants.DIMENSION.height / 2) - ((Constants.DIMENSION.height / 3)));
+                (Constants.DIMENSION.height / 2) - (int)(Constants.DIMENSION.height / 2.5));
 
         this.setResizable(false);
 
@@ -125,8 +141,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         setInitialStateAndAvailabilityOfUIComponents();
     }
 
-    private JPanel getNewWordPanel(GridBagConstraints componentGbc, Dimension wordPanelDimension, Dimension buttonDimension,
-                                   Font font)
+    private JPanel getNewWordPanel(GridBagConstraints componentGbc, Dimension wordPanelDimension,
+                                   Dimension buttonDimension, Font font)
     {
         JPanel wordPanel = getNewPanel(wordPanelDimension, null);
 
@@ -135,7 +151,6 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         wordTextField = getNewTextField(buttonDimension, font, SwingConstants.CENTER);
 
         componentGbc.gridy = 0;
-        componentGbc.weighty = 1;
         wordPanel.add(wordLabel, componentGbc);
 
         componentGbc.gridy = 1;
@@ -146,7 +161,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
     }
 
     private JPanel getNewCategoriesPanel(GridBagConstraints componentGbc, Dimension categoryPanelDimension,
-                                         Dimension buttonDimension, Dimension toolBarButtonDimension, Font font)
+                                         Dimension buttonDimension, Dimension toolBarButtonDimension, Font font,
+                                         Font toolbarButtonFont)
     {
         JPanel categoryPanel = getNewPanel(categoryPanelDimension, null);
 
@@ -156,7 +172,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
         categoryComboBox = getNewComboBox(buttonDimension, font);
 
-        addButtonsToCategoryToolbar(toolBarButtonDimension, font);
+        addButtonsToCategoryToolbar(toolBarButtonDimension, toolbarButtonFont);
 
         categoryTextField = getNewTextField(buttonDimension, font, SwingConstants.CENTER);
 
@@ -182,7 +198,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
     private JPanel getNewElementsPanel(GridBagConstraints componentGbc, Dimension elementsPanelDimension,
                                        Dimension buttonDimension, Dimension toolBarButtonDimension,
-                                       Dimension scrollPaneDimension, Font font)
+                                       Dimension scrollPaneDimension, Font font, Font toolbarButtonFont)
     {
         JPanel elementsPanel = getNewPanel(elementsPanelDimension, null);
 
@@ -190,14 +206,14 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
         elementToolBar = getNewToolbar(buttonDimension, false, true);
 
-        addButtonsToElementsToolBar(toolBarButtonDimension, font);
+        addButtonsToElementsToolBar(toolBarButtonDimension, toolbarButtonFont);
 
         elementComboBox = getNewComboBox(buttonDimension, font);
 
-        elementTextArea = getNewJTextArea(font);
+        elementTextArea = getNewJTextArea(font, true, true);
 
         JScrollPane elementScrollPane = getNewScrollPane(scrollPaneDimension, elementTextArea,
-                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         elementTextArea.setFont(font);
 
@@ -229,16 +245,16 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
         if(!windowsManager.getIfWordIsBeingModified())
         {
-            actionJButton = getNewButton(buttonDimension, Constants.PREVIEW, font);
+            actionButton = getNewButton(buttonDimension, Constants.PREVIEW, font);
         }
         else
         {
-            actionJButton = getNewButton(buttonDimension, Constants.REPLACE, font);
+            actionButton = getNewButton(buttonDimension, Constants.REPLACE, font);
         }
 
         componentGbc.gridx = 0;
         componentGbc.gridy = 0;
-        buttonPanel.add(actionJButton, componentGbc);
+        buttonPanel.add(actionButton, componentGbc);
 
         return buttonPanel;
     }
@@ -250,6 +266,12 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         moveCategoryUp   = getNewButton(toolBarButtonDimension, Constants.MOVE_UP,   font);
         moveCategoryDown = getNewButton(toolBarButtonDimension, Constants.MOVE_DOWN, font);
         modifyCategory   = getNewButton(toolBarButtonDimension, Constants.MODIFY,    font);
+
+        addCategory.setToolTipText(Constants.ADD_CATEGORY);
+        deleteCategory.setToolTipText(Constants.DELETE_CATEGORY);
+        moveCategoryUp.setToolTipText(Constants.MOVE_CATEGORY_UP);
+        moveCategoryDown.setToolTipText(Constants.MOVE_CATEGORY_DOWN);
+        modifyCategory.setToolTipText(Constants.MODIFY_CATEGORY);
 
         categoryToolBar.add(addCategory);
         categoryToolBar.add(deleteCategory);
@@ -266,6 +288,12 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         moveElementDown = getNewButton(toolBarButtonDimension, Constants.MOVE_DOWN, font);
         modifyElement   = getNewButton(toolBarButtonDimension, Constants.MODIFY,    font);
 
+        addElement.setToolTipText(Constants.ADD_ELEMENT);
+        deleteElement.setToolTipText(Constants.DELETE_ELEMENT);
+        moveElementUp.setToolTipText(Constants.MOVE_ELEMENT_UP);
+        moveElementDown.setToolTipText(Constants.MOVE_ELEMENT_DOWN);
+        modifyElement.setToolTipText(Constants.MODIFY_ELEMENT);
+
         elementToolBar.add(addElement);
         elementToolBar.add(deleteElement);
         elementToolBar.add(moveElementUp);
@@ -277,16 +305,201 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
     {
         addActionListeners();
         addKeyListeners();
-
         addNavigationKeyListeners();
         addWindowListener();
     }
 
     private void addActionListeners()
     {
+        addActionListenersToArrowPanel();
         addActionListenersToCategoryPanel();
         addActionListenersToElementPanel();
         addActionListenersToButtonPanel();
+    }
+
+    private void addKeyListeners()
+    {
+        addKeyListenerToArrowPanel();
+        addKeyListenersToCategoryPanel();
+        addKeyListenersToElementPanel();
+        addKeyListenersToActionButton();
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToCategoryPanel()
+    {
+        addCategory.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addCategory();
+                    addCategory.requestFocus();
+                }
+            }
+        });
+
+        deleteCategory.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteCategory();
+                    deleteCategory.requestFocus();
+                }
+            }
+        });
+
+        moveCategoryUp.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveCategoryUp();
+                    moveCategoryUp.requestFocus();
+                }
+            }
+        });
+
+        moveCategoryDown.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveCategoryDown();
+                    moveCategoryDown.requestFocus();
+                }
+            }
+        });
+
+        modifyCategory.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    modifyCategory();
+                    modifyCategory.requestFocus();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToElementPanel()
+    {
+        addElement.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addElement();
+                    addElement.requestFocus();
+                }
+            }
+        });
+
+        deleteElement.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteElement();
+                    deleteElement.requestFocus();
+                }
+            }
+        });
+
+        moveElementUp.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveElementUp();
+                    moveElementUp.requestFocus();
+                }
+            }
+        });
+
+        moveElementDown.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveElementDown();
+                    moveElementDown.requestFocus();
+                }
+            }
+        });
+
+        modifyElement.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    modifyElement();
+                    modifyElement.requestFocus();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToActionButton()
+    {
+        actionButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    actionButtonAction();
+                }
+            }
+        });
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
     }
 
     private void addActionListenersToCategoryPanel()
@@ -405,7 +618,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
 
     private void addActionListenersToButtonPanel()
     {
-        actionJButton.addActionListener(new ActionListener()
+        actionButton.addActionListener(new ActionListener()
         {
             @Override
             public void actionPerformed(ActionEvent e)
@@ -415,212 +628,16 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         });
     }
 
-    private void addKeyListeners()
-    {
-        addKeyListenersToCategoryPanel();
-        addKeyListenersToElementPanel();
-        addKeyListenersToButtonPanel();
-    }
-
-    private void addKeyListenersToCategoryPanel()
-    {
-        categoryComboBox.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    categoryComboBoxAction();
-                }
-            }
-        });
-
-        addCategory.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    addCategory();
-                }
-            }
-        });
-
-        deleteCategory.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    deleteCategory();
-                }
-            }
-        });
-
-        moveCategoryUp.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveCategoryUp();
-                }
-            }
-        });
-
-        moveCategoryDown.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveCategoryDown();
-                }
-            }
-        });
-
-        modifyCategory.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    modifyCategory();
-                }
-            }
-        });
-
-
-    }
-
-    private void addKeyListenersToElementPanel()
-    {
-        elementComboBox.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    elementComboBoxAction();
-                }
-            }
-        });
-
-        addElement.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    addElement();
-                }
-            }
-        });
-
-        deleteElement.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    deleteElement();
-                }
-            }
-        });
-
-        moveElementUp.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveElementUp();
-                }
-            }
-        });
-
-        moveElementDown.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    moveElementDown();
-                }
-            }
-        });
-
-        modifyElement.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    modifyElement();
-                }
-            }
-        });
-
-
-    }
-
-    private void addKeyListenersToButtonPanel()
-    {
-        actionJButton.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                {
-                    actionButtonAction();
-                }
-            }
-        });
-
-
-    }
-
     private void addWindowListener()
     {
-        if(windowsManager.getIfWordIsBeingModified())
+        this.addWindowListener(new WindowAdapter()
         {
-            windowAdapter = new WindowAdapter()
+            @Override
+            public void windowClosing(WindowEvent e)
             {
-                @Override
-                public void windowClosing(WindowEvent e)
-                {
-                    addOrEditWordManuallyFrame.dispose();
-                    new ListOfWordsFrame(jsonFilesManager, windowsManager);
-                }
-            };
-        }
-        else
-        {
-            windowAdapter = new WindowAdapter()
-            {
-                @Override
-                public void windowClosing(WindowEvent e)
-                {
-                    addOrEditWordManuallyFrame.dispose();
-                    new AddWordFrame(jsonFilesManager, windowsManager);
-                }
-            };
-        }
-
-        this.addWindowListener(windowAdapter);
+                exitProgram();
+            }
+        });
     }
 
     private void addNavigationKeyListeners()
@@ -634,7 +651,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         components.add(moveElementUp);
         components.add(elementComboBox);
         components.add(elementTextArea);
-        components.add(actionJButton);
+        components.add(actionButton);
 
         addNavigationKeyListenersToMainComponents(components, false, true);
 
@@ -649,8 +666,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         categoryButtons.add(moveCategoryDown);
         categoryButtons.add(modifyCategory);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(categoryButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(categoryButtons, components, 1, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(categoryButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(categoryButtons, components, 1, false);
 
         List<Component> elementButtons = new ArrayList<>();
 
@@ -660,8 +677,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         elementButtons.add(moveElementDown);
         elementButtons.add(modifyElement);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(elementButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(elementButtons, components, 4, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(elementButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(elementButtons, components, 4, false);
     }
 
     private void categoryComboBoxAction()
@@ -686,6 +703,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -738,6 +756,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -811,6 +830,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -867,6 +887,7 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -947,63 +968,100 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
 
     }
 
     private void actionButtonAction()
     {
-        if(checkIfUserHasEnteredData())
+        try
         {
-            if(!windowsManager.getIfWordIsBeingModified())
+            if(checkIfUserHasEnteredData())
             {
-                wordAndItsContent = returnProperWordAndItsContentList();
-
-                addOrEditWordManuallyFrame.dispose();
-                new WordFrame(jsonFilesManager, windowsManager, wordAndItsContent);
-            }
-            else
-            {
-                wordAndItsContent = returnProperWordAndItsContentList();
-
-                jsonFilesManager.setContentOfGivenWord(wordAndItsContent);
-
-                if(jsonFilesManager.checkIfWordDoNotExists(wordAndItsContent.get(0).get(0)))
+                if(!windowsManager.getIfWordIsBeingModified())
                 {
-                    jsonFilesManager.replaceWordWithAnotherOne();
-                    jsonFilesManager.setListOfWords();
+                    wordAndItsContent = returnProperWordAndItsContentList();
 
-                    new InformationDialog(Constants.INFORMATION, Constants.WORD_SUCCESSFULLY_MODIFIED,
-                            Constants.CLICK_OK_TO_CONTINUE, null);
+                    addOrEditWordManuallyFrame.dispose();
+
+                    new WordFrame(jsonFilesManager, windowsManager, soundFilesManager, wordAndItsContent);
                 }
                 else
                 {
-                    new InformationDialog(Constants.INFORMATION,
-                            Constants.WORD_ALREADY_EXISTS_FIRST_PART_OF_MEESAGE,
-                            Constants.WORD_ALREADY_EXISTS_SECOND_PART_OF_MEESAGE, null);
-                }
+                    wordAndItsContent = returnProperWordAndItsContentList();
 
-                wordAndItsContent.remove(0);
+                    String pathStringForJsonFiles = Constants.PROGRAM_LOCATION + jsonFilesManager.getCurrentListName() +
+                            "/" + jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/";
+
+                    String pathStringForSoundFiles = Constants.PROGRAM_LOCATION + jsonFilesManager.getCurrentListName() +
+                            "/" + wordAndItsContent.get(0).get(0) + "/";
+
+                    jsonFilesManager.renameFile(pathStringForJsonFiles, pathStringForSoundFiles);
+
+                    jsonFilesManager.setContentOfGivenWord(wordAndItsContent);
+
+                    String oldName = jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex());
+
+
+                    if(jsonFilesManager.checkIfWordDoNotExists(wordAndItsContent.get(0).get(0)))
+                    {
+                        jsonFilesManager.replaceWordWithAnotherOne();
+                        jsonFilesManager.setListOfWords();
+
+                        try
+                        {
+                            String firstFilePath = Constants.PROGRAM_LOCATION + jsonFilesManager.getCurrentListName() +
+                                    "/" + jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) +
+                                    "/" + Constants.SOUND_FILES + "/" + oldName + Constants.WAV_SUFFIX + "/";
+
+                            String secondFilePath = Constants.PROGRAM_LOCATION + jsonFilesManager.getCurrentListName() + "/" +
+                                    jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/" +
+                                    Constants.SOUND_FILES + "/" + wordAndItsContent.get(0).get(0) + Constants.WAV_SUFFIX + "/";
+
+                            jsonFilesManager.renameFile(firstFilePath, secondFilePath);
+                        }
+                        catch (Exception exception)
+                        {
+                            exception.printStackTrace();
+                        }
+
+                        new InformationDialog(Constants.INFORMATION, Constants.WORD_SUCCESSFULLY_MODIFIED,
+                                Constants.CLICK_OK_TO_CONTINUE, null,this);
+                    }
+                    else
+                    {
+                        new InformationDialog(Constants.INFORMATION,
+                                Constants.WORD_ALREADY_EXISTS_FIRST_PART_OF_MEESAGE,
+                                Constants.WORD_ALREADY_EXISTS_SECOND_PART_OF_MEESAGE, null,
+                                this);
+                    }
+                }
+            }
+            else
+            {
+                new InformationDialog(Constants.INFORMATION,
+                        Constants.GIVEN_DATA_IS_INCOMPLETE_FIRST_PART_OF_INFORMATION,
+                        Constants.GIVEN_DATA_IS_INCOMPLETE_SECOND_PART_OF_INFORMATION, null,
+                        null);
             }
         }
-        else
+        catch (Exception exception)
         {
-            new InformationDialog(Constants.INFORMATION,
-                    Constants.GIVEN_DATA_IS_INCOMPLETE_FIRST_PART_OF_INFORMATION,
-                    Constants.GIVEN_DATA_IS_INCOMPLETE_SECOND_PART_OF_INFORMATION, null);
+            exception.printStackTrace();
         }
     }
 
     public void exitFrame()
     {
+        addOrEditWordManuallyFrame.dispose();
+
         if(windowsManager.getIfWordIsBeingModified())
         {
-            addOrEditWordManuallyFrame.dispose();
             new ListOfWordsFrame(jsonFilesManager, windowsManager);
         }
         else
         {
-            addOrEditWordManuallyFrame.dispose();
             new AddWordFrame(jsonFilesManager, windowsManager);
         }
     }
@@ -1216,6 +1274,8 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
                 changeStateOfElementComboBoxAndElementTextArea(true);
             }
         }
+
+        wordTextField.requestFocus();
     }
 
     private void refreshComboBoxState(JComboBox jComboBox, List<String> list, int selectedIndex)
@@ -1272,5 +1332,25 @@ public class AddOrEditWordManuallyFrame extends MultiComponentComplexFrame
         wordAndItsContent.clear();
 
         return copyOfWordAndItsContent;
+    }
+
+    public JsonFilesManager getJsonFilesManager()
+    {
+        return jsonFilesManager;
+    }
+
+    public WindowsManager getWindowsManager()
+    {
+        return windowsManager;
+    }
+
+    public SoundFilesManager getSoundFilesManager()
+    {
+        return soundFilesManager;
+    }
+
+    public List<List<String>> getWordAndItsContent()
+    {
+        return wordAndItsContent;
     }
 }

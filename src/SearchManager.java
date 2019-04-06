@@ -31,8 +31,6 @@ public class SearchManager
             {
                 foundElementsList.add(elementsList.get(i));
                 foundIndexes.add(indexList.get(i));
-
-                System.out.println(elementsList.get(i));
             }
         }
 
@@ -63,7 +61,7 @@ public class SearchManager
             String listName = listOfWordsFrame.getJsonFilesManager().getListOfLists().get(listIndex);
             elementsList.add(listName);
 
-            listOfWordsFrame.getJsonFilesManager().setChosenListName(listName);
+            listOfWordsFrame.getJsonFilesManager().setCurrentListName(listName);
             listOfWordsFrame.getJsonFilesManager().setListOfWords();
 
             List<String> listOfWords = listOfWordsFrame.getJsonFilesManager().getListOfWords();

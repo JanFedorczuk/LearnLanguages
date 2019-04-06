@@ -28,7 +28,6 @@ public class ComplexFrame extends JFrame
 
     public void displayUI()
     {
-
         this.setVisible(true);
     }
 
@@ -41,6 +40,31 @@ public class ComplexFrame extends JFrame
             panel.setBackground(color);
         }
         return panel;
+    }
+
+    public JPanel getArrowPanel(Dimension panelDimension, Dimension buttonDimension, Font font, Color color)
+    {
+        JPanel arrowPanel = getNewPanel(panelDimension, color);
+
+        JToolBar toolBar = getNewToolbar(buttonDimension, false, true);
+
+        JButton arrowButton = getNewButton(buttonDimension, Constants.PREVIOUS, font);
+
+        toolBar.add(arrowButton);
+
+        GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTHWEST);
+
+        arrowPanel.add(toolBar, componentGbc);
+
+        return arrowPanel;
+    }
+
+    public JButton getPreviousWindowButton(JPanel arrowPanel)
+    {
+        JToolBar toolBar = (JToolBar) arrowPanel.getComponents()[0];
+        JButton previousWindowButton = (JButton) toolBar.getComponents()[0];
+
+        return previousWindowButton;
     }
 
     public JLabel getNewLabel(String text, Font font)
@@ -114,10 +138,12 @@ public class ComplexFrame extends JFrame
         return scrollPane;
     }
 
-    public JTextArea getNewJTextArea(Font font)
+    public JTextArea getNewJTextArea(Font font, Boolean lineWrap, Boolean wrapStyleWord)
     {
         JTextArea textArea = new JTextArea();
         textArea.setFont(font);
+        textArea.setLineWrap(lineWrap);
+        textArea.setWrapStyleWord(wrapStyleWord);
         return textArea;
     }
 
@@ -144,6 +170,17 @@ public class ComplexFrame extends JFrame
         radioButton.setFont(font);
 
         return radioButton;
+    }
+
+    public JCheckBox getNewCheckBox(Dimension dimension, String text, Font font)
+    {
+        JCheckBox checkBox = new JCheckBox();
+
+        checkBox.setText(text);
+        checkBox.setPreferredSize(dimension);
+        checkBox.setFont(font);
+
+        return checkBox;
     }
 
     public GridBagConstraints getGridBagConstraints(int anchor)
@@ -297,20 +334,20 @@ public class ComplexFrame extends JFrame
         }
     }
 
-    public void addHorizontalNavigationKeyBindingsToToolbarButtons(List<Component> buttons)
+    public void addHorizontalNavigationKeyBindingsToGroupOfButtons(List<Component> buttons)
     {
-        KeyStroke upKeyStroke = KeyStroke.getKeyStroke("UP");
-        KeyStroke downKeyStroke = KeyStroke.getKeyStroke("DOWN");
+        KeyStroke upKeyStroke = KeyStroke.getKeyStroke(Constants.UP);
+        KeyStroke downKeyStroke = KeyStroke.getKeyStroke(Constants.DOWN);
 
         if(buttons.get(0) instanceof JButton)
         {
-            List<JButton> jbuttons = new ArrayList<>();
+            List<JButton> jButtons = new ArrayList<>();
             for(Component button: buttons)
             {
-                jbuttons.add((JButton) button);
+                jButtons.add((JButton) button);
             }
 
-            for(JButton button: jbuttons)
+            for(JButton button: jButtons)
             {
                 List<Component> components = new ArrayList<>(buttons);
 
@@ -392,7 +429,8 @@ public class ComplexFrame extends JFrame
                     {
                         int newIndex = getIndexForHorizontalComponents(components, buttons.indexOf(button), true);
 
-                        buttons.get(newIndex).requestFocus();
+                        radioButtons.get(newIndex).requestFocus();
+                        radioButtons.get(newIndex).setSelected(true);
                     }
                 }
 
@@ -404,7 +442,8 @@ public class ComplexFrame extends JFrame
 
                         int newIndex = getIndexForHorizontalComponents(components, buttons.indexOf(button), false);
 
-                        buttons.get(newIndex).requestFocus();
+                        radioButtons.get(newIndex).requestFocus();
+                        radioButtons.get(newIndex).setSelected(true);
                     }
                 }
 
@@ -416,17 +455,19 @@ public class ComplexFrame extends JFrame
                     }
                 }
 
-                String leftActionMapKey = Constants.LEFT + button.getName();
+                if(!checkIfLanguageIsForbidden(radioButtons.get(0).getText()) &&
+                        !checkIfLanguageIsForbidden(radioButtons.get(1).getText()))
+                {
+                    String leftActionMapKey = Constants.LEFT + button.getName();
+                    button.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, true),
+                            leftActionMapKey);
+                    button.getActionMap().put(leftActionMapKey, new navigationLeftAction());
 
-                button.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, true),
-                        leftActionMapKey);
-                button.getActionMap().put(leftActionMapKey, new navigationLeftAction());
-
-                String rightActionMapKey = Constants.RIGHT + button.getName();
-
-                button.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, true),
-                        rightActionMapKey);
-                button.getActionMap().put(rightActionMapKey, new navigationRightAction());
+                    String rightActionMapKey = Constants.RIGHT + button.getName();
+                    button.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, true),
+                            rightActionMapKey);
+                    button.getActionMap().put(rightActionMapKey, new navigationRightAction());
+                }
 
                 KeyStroke rightKeyStroke = KeyStroke.getKeyStroke(Constants.RIGHT);
                 KeyStroke leftKeyStroke = KeyStroke.getKeyStroke(Constants.LEFT);
@@ -444,11 +485,9 @@ public class ComplexFrame extends JFrame
                 button.getActionMap().put(downKeyStroke, new passiveAction());
             }
         }
-
-
     }
 
-    public void addVerticalNavigationKeyBindingsToToolbarButtons(List<Component> buttons, List<Component> components,
+    public void addVerticalNavigationKeyBindingsToGroupOfButtons(List<Component> buttons, List<Component> components,
                                                                  int elementNumber, boolean areAllComponentsEnabled)
     {
         KeyStroke upKeyStroke = KeyStroke.getKeyStroke(Constants.UP);
@@ -514,6 +553,21 @@ public class ComplexFrame extends JFrame
 
                     button.getInputMap().put(downKeyStroke, downKeyStroke);
                     button.getActionMap().put(downKeyStroke, new passiveAction());
+
+                    if(Math.round((jbuttons.size() - 1) / 2) != jbuttons.indexOf(button))
+                    {
+                        button.addKeyListener(new KeyAdapter()
+                        {
+                            @Override
+                            public void keyReleased(KeyEvent e)
+                            {
+                                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                                {
+                                    exitFrame();
+                                }
+                            }
+                        });
+                    }
                 }
             }
             else if (buttons.get(0) instanceof JRadioButton)
@@ -576,12 +630,85 @@ public class ComplexFrame extends JFrame
 
                     button.getInputMap().put(downKeyStroke, downKeyStroke);
                     button.getActionMap().put(downKeyStroke, new passiveAction());
+
+                    if(Math.round((buttons.size() - 1) / 2) != buttons.indexOf(button))
+                    {
+                        button.addKeyListener(new KeyAdapter()
+                        {
+                            @Override
+                            public void keyReleased(KeyEvent e)
+                            {
+                                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                                {
+                                    exitFrame();
+                                }
+                            }
+                        });
+                    }
                 }
             }
+    }
+
+    public void removeNativeListener(List<Component> buttons)
+    {
+        class passiveAction extends AbstractAction
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+            }
+        }
+
+        if(buttons.get(0) instanceof JButton)
+        {
+            List<JButton> jButtons = new ArrayList<>();
+            for(Component button: buttons)
+            {
+                jButtons.add((JButton) button);
+            }
+
+            KeyStroke upKeyStroke = KeyStroke.getKeyStroke(Constants.UP);
+            KeyStroke downKeyStroke = KeyStroke.getKeyStroke(Constants.DOWN);
+
+            for(JButton button: jButtons)
+            {
+                KeyStroke rightKeyStroke = KeyStroke.getKeyStroke(Constants.RIGHT);
+                KeyStroke leftKeyStroke = KeyStroke.getKeyStroke(Constants.LEFT);
+
+                button.getInputMap().put(leftKeyStroke, leftKeyStroke);
+                button.getActionMap().put(leftKeyStroke, new passiveAction());
+
+                button.getInputMap().put(rightKeyStroke, rightKeyStroke);
+                button.getActionMap().put(rightKeyStroke, new passiveAction());
+
+                button.getInputMap().put(upKeyStroke, upKeyStroke);
+                button.getActionMap().put(upKeyStroke, new passiveAction());
+
+                button.getInputMap().put(downKeyStroke, downKeyStroke);
+                button.getActionMap().put(downKeyStroke, new passiveAction());
+            }
+        }
+    }
+
+    private boolean checkIfLanguageIsForbidden(String language)
+    {
+        if(language.equals(Constants.ESTONIAN_LANGUAGE) || language.equals(Constants.LITHUANIAN_LANGUAGE))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public void exitFrame()
     {
 
+    }
+
+    public void exitProgram()
+    {
+        System.exit(0);
     }
 }

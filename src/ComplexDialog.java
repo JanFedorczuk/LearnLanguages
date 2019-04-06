@@ -69,6 +69,15 @@ public class ComplexDialog extends JDialog
         return textField;
     }
 
+    public JProgressBar getNewProgressBar(Dimension dimension, Font font)
+    {
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setPreferredSize(dimension);
+        progressBar.setFont(font);
+
+        return progressBar;
+    }
+
     public int getElementIndex(Boolean ifNext, int index, java.util.List<Component> list, boolean areAllComponentsEnabled)
     {
         if(ifNext)

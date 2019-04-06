@@ -1,13 +1,17 @@
 package LearnLanguages;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SortFrame extends ComplexFrame
+public class SortFrame extends MultiComponentComplexFrame
 {
+    private JButton previousWindowButton;
+
     private JRadioButton listsOrder         ;
     private JRadioButton givenListWordsOrder;
     private JRadioButton everyListWordsOrder;
@@ -50,10 +54,12 @@ public class SortFrame extends ComplexFrame
         int fontSize     = (int) (size * Constants.fontMultiplier);
 
         Dimension mainPanelDimension             = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions           = new Dimension(mainPanelWidth, buttonHeight);
         Dimension chooseWhatToSortPanelDimension = new Dimension(mainPanelWidth, (int)(mainPanelHeight * 0.3630573));
         Dimension chooseHowToSortPanelDimension  = new Dimension(mainPanelWidth, (int)(mainPanelHeight * 0.2229299));
 
         Dimension buttonPanelDimension           = new Dimension(mainPanelWidth, buttonHeight);
+        Dimension toolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
 
         Dimension buttonDimension = new Dimension(buttonWidth, buttonHeight);
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
@@ -61,6 +67,8 @@ public class SortFrame extends ComplexFrame
         GridBagConstraints gbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         JPanel mainPanel = getNewPanel(mainPanelDimension,null);
+
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
 
         JPanel chooseWhatToSortPanel = createChooseWhatToSortPanel(gbc, chooseWhatToSortPanelDimension, buttonDimension, font);
 
@@ -70,18 +78,22 @@ public class SortFrame extends ComplexFrame
         JPanel buttonPanel = createButtonPanel(buttonPanelDimension,buttonDimension,
                 font);
 
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
         GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
         panelGbc.gridy = 0;
-
-        mainPanel.add(chooseWhatToSortPanel, panelGbc);
+        panelGbc.weighty = 0;
+        mainPanel.add(arrowPanel, panelGbc);
 
         panelGbc.gridy = 1;
-
-        mainPanel.add(chooseHowToSortPanel, panelGbc);
+        panelGbc.weighty = 1;
+        mainPanel.add(chooseWhatToSortPanel, panelGbc);
 
         panelGbc.gridy = 2;
+        mainPanel.add(chooseHowToSortPanel, panelGbc);
 
+        panelGbc.gridy = 3;
         mainPanel.add(buttonPanel, panelGbc);
 
         add(mainPanel);
@@ -98,6 +110,8 @@ public class SortFrame extends ComplexFrame
 
         this.setResizable(false);
 
+        givenListWordsOrder.requestFocus();
+
         addListenersToFrame();
     }
 
@@ -108,12 +122,17 @@ public class SortFrame extends ComplexFrame
 
         JLabel chooseWhatToSortLabel = getNewLabel(Constants.CHOOSE_WHAT_TO_SORT, font);
 
-
         listsOrder          = getNewRadioButton(buttonDimension, Constants.LISTS, font);
         givenListWordsOrder = getNewRadioButton(buttonDimension, Constants.LIST_WORDS, font);
         everyListWordsOrder = getNewRadioButton(buttonDimension, Constants.ALL_WORDS, font);
 
         givenListWordsOrder.setSelected(true);
+
+        ButtonGroup buttonGroup = new ButtonGroup();
+
+        buttonGroup.add(everyListWordsOrder);
+        buttonGroup.add(givenListWordsOrder);
+        buttonGroup.add(listsOrder);
 
         JPanel radioButtonsFirstPanel = getNewPanel(
                 (new Dimension((int)chooseWhatToSortPanelDimension.getWidth(), (int)buttonDimension.getHeight())),
@@ -199,14 +218,48 @@ public class SortFrame extends ComplexFrame
 
     private void addListenersToFrame()
     {
-        addActionListenerToChooseWhatToSortButton();
         addActionListenerToSortButton();
+
+        addActionListenersToArrowPanel();
+
+        addKeyListener();
+
+        addKeyListenerToArrowPanel();
 
         addNavigationKeyListeners();
 
-        addMouseListeners();
+        addFocusListenerToFirstButtonGroup();
 
         addWindowListener();
+    }
+
+    private void addKeyListener()
+    {
+        sortButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    sortAction();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
+            }
+        });
     }
 
     private void addActionListenerToSortButton()
@@ -216,41 +269,19 @@ public class SortFrame extends ComplexFrame
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                jsonFilesManager.setChosenListName
-                        (jsonFilesManager.getListOfLists().get(listJComboBox.getSelectedIndex()));
-
-                SortingManager sortingManager = new SortingManager(returnNameOfElementToBeSorted(),
-                        returnNameOfList(), returnNameOfTypeOfSorting(), jsonFilesManager, listOfWordsFrame);
+                sortAction();
             }
         });
     }
 
-    private void addActionListenerToChooseWhatToSortButton()
+    private void addActionListenersToArrowPanel()
     {
-        listsOrder.addActionListener(new ActionListener()
+        previousWindowButton.addActionListener(new ActionListener()
         {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                setListComboBoxAvailability(false);
-            }
-        });
-
-        givenListWordsOrder.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setListComboBoxAvailability(true);
-            }
-        });
-
-        everyListWordsOrder.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setListComboBoxAvailability(false);
+                exitFrame();
             }
         });
     }
@@ -266,85 +297,65 @@ public class SortFrame extends ComplexFrame
 
         addNavigationKeyListenersToMainComponents(components, false, true);
 
+        addNavigationKeyListenersToComboBox(listJComboBox);
+
         List<Component> chooseWhatToSortButtons = new ArrayList<>();
 
         chooseWhatToSortButtons.add(everyListWordsOrder);
         chooseWhatToSortButtons.add(givenListWordsOrder);
         chooseWhatToSortButtons.add(listsOrder);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(chooseWhatToSortButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(chooseWhatToSortButtons, components, 0, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(chooseWhatToSortButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(chooseWhatToSortButtons, components, 0, false);
 
         List<Component> chooseHowToSortButtons = new ArrayList<>();
 
-        chooseHowToSortButtons.add(sortAccordingToTheDateOfAddition);
         chooseHowToSortButtons.add(sortAlphabetically);
         chooseHowToSortButtons.add(sortInReverseAlphabeticalOrder);
+        chooseHowToSortButtons.add(sortAccordingToTheDateOfAddition);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(chooseWhatToSortButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(chooseWhatToSortButtons, components, 0, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(chooseHowToSortButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(chooseHowToSortButtons, components, 2, false);
     }
 
-    private void addMouseListeners()
+    private void addFocusListenerToFirstButtonGroup()
     {
-        List<JRadioButton> sortRadioButtons = new ArrayList<>();
-
-        sortRadioButtons.add(listsOrder);
-        sortRadioButtons.add(givenListWordsOrder);
-        sortRadioButtons.add(everyListWordsOrder);
-
-        List<JRadioButton> typeOfSortingRadioButtons = new ArrayList<>();
-
-        typeOfSortingRadioButtons.add(sortAlphabetically);
-        typeOfSortingRadioButtons.add(sortInReverseAlphabeticalOrder);
-        typeOfSortingRadioButtons.add(sortAccordingToTheDateOfAddition);
-
-
-        addMouseListenersToRadioButtons(sortRadioButtons);
-        addMouseListenersToRadioButtons(typeOfSortingRadioButtons);
-    }
-
-    private void addMouseListenersToRadioButtons(List<JRadioButton> radioButtons)
-    {
-        for(JRadioButton radioButton: radioButtons)
+        listsOrder.addChangeListener(new ChangeListener()
         {
-            radioButton.addMouseListener(new MouseAdapter()
+            @Override
+            public void stateChanged(ChangeEvent e)
             {
-                @Override
-                public void mouseReleased(MouseEvent e)
+                if(listsOrder.isSelected())
                 {
-                    int index = radioButtons.indexOf(radioButton);
-                    int nextIndex;
-                    int previousIndex;
-
-                    if(index == 0)
-                    {
-                        nextIndex = index + 1;
-                        previousIndex = radioButtons.size() - 1;
-                    }
-                    else if(index == (radioButtons.size() - 1))
-                    {
-                        nextIndex = 0;
-                        previousIndex = index - 1;
-                    }
-                    else
-                    {
-                        nextIndex = index + 1;
-                        previousIndex = index - 1;
-                    }
-
-                    if(radioButton.isSelected())
-                    {
-                        radioButtons.get(nextIndex).setSelected(false);
-                        radioButtons.get(previousIndex).setSelected(false);
-                    }
-                    else
-                    {
-                        radioButton.setSelected(true);
-                    }
+                    setListComboBoxAvailability(false);
                 }
-            });
-        }
+            }
+        });
+
+        givenListWordsOrder.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                if(givenListWordsOrder.isSelected())
+                {
+                    setListComboBoxAvailability(true);
+                }
+            }
+        });
+
+        everyListWordsOrder.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                if(everyListWordsOrder.isSelected())
+                {
+                    setListComboBoxAvailability(false);
+                }
+            }
+        });
+
     }
 
     private void addWindowListener()
@@ -354,9 +365,18 @@ public class SortFrame extends ComplexFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                exitFrame();
+                exitProgram();
             }
         });
+    }
+
+    private void sortAction()
+    {
+        jsonFilesManager.setCurrentListName
+                (jsonFilesManager.getListOfLists().get(listJComboBox.getSelectedIndex()));
+
+        SortingManager sortingManager = new SortingManager(returnNameOfElementToBeSorted(),
+                returnNameOfList(), returnNameOfTypeOfSorting(), jsonFilesManager, listOfWordsFrame);
     }
 
     private void setListComboBoxContent()
@@ -369,6 +389,7 @@ public class SortFrame extends ComplexFrame
 
     private void setListComboBoxAvailability(Boolean value)
     {
+
         listJComboBox.setEnabled(value);
     }
 

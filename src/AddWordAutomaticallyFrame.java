@@ -10,6 +10,8 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 {
     private AddWordAutomaticallyFrame addWordAutomaticallyFrame = this;
 
+    private JButton previousWindowButton;
+
     private JButton     translateWordButton   ;
     private JButton     chooseCategoriesButton;
 
@@ -25,11 +27,16 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 
     private JsonFilesManager jsonFilesManager;
     private WindowsManager windowsManager;
+    private SoundFilesManager soundFilesManager;
 
-    public AddWordAutomaticallyFrame(JsonFilesManager jsonFilesManager, WindowsManager windowsManager)
+    private int previousIndex = -1;
+
+    public AddWordAutomaticallyFrame(JsonFilesManager jsonFilesManager, WindowsManager windowsManager,
+                                     SoundFilesManager soundFilesManager)
     {
         this.jsonFilesManager = jsonFilesManager;
         this.windowsManager = windowsManager;
+        this.soundFilesManager = soundFilesManager;
 
         createUI();
         setUIOptions();
@@ -54,11 +61,13 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
         Font plainFont = new Font(Constants.FONT_NAME, Font.PLAIN, fontSize);
 
         Dimension mainPanelDimension        = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions   = new Dimension(mainPanelWidth, buttonHeight);
         Dimension informationPanelDimension = new Dimension(mainPanelWidth, (int)Math.round(size * 0.104));
         Dimension translationPanelDimension = new Dimension(mainPanelWidth, (int)Math.round(size * 0.456));
         Dimension categoryPanelDimension    = new Dimension(mainPanelWidth, (int)Math.round(size * 0.72));
 
         Dimension scrollPaneDimension       = new Dimension((int)(buttonWidth * 1.5), (int)(buttonHeight * 5));
+        Dimension toolBarButtonDimension     = new Dimension((int)(buttonWidth / 5), buttonHeight);
         Dimension chooseCategoriesDimension = new Dimension((int)(buttonWidth * 1.5), buttonHeight);
 
         Dimension buttonDimension = new Dimension(buttonWidth,buttonHeight);
@@ -66,6 +75,8 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
         GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTH);
         
         JPanel mainPanel = getNewPanel(mainPanelDimension, null);
+
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, plainFont,null);
 
         JPanel translationPanel = getNewTranslationPanel(componentGbc, translationPanelDimension, buttonDimension,
                 boldFont, plainFont);
@@ -75,15 +86,22 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
         JPanel categoryPanel    = getNewCategoryPanel(componentGbc, categoryPanelDimension, scrollPaneDimension,
                 chooseCategoriesDimension, boldFont);
 
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
         GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
 
         panelGbc.gridy = 0;
-        mainPanel.add(translationPanel, panelGbc);
+        panelGbc.weighty = 0;
+        mainPanel.add(arrowPanel, panelGbc);
 
         panelGbc.gridy = 1;
-        mainPanel.add(informationPanel, panelGbc);
+        panelGbc.weighty = 1;
+        mainPanel.add(translationPanel, panelGbc);
 
         panelGbc.gridy = 2;
+        mainPanel.add(informationPanel, panelGbc);
+
+        panelGbc.gridy = 3;
         mainPanel.add(categoryPanel, panelGbc);
 
         add(mainPanel);
@@ -102,6 +120,8 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
         this.changeCategoriesListAndButtonStateAndAvailability(false);
 
         addListenersToFrame();
+
+        wordToBeTranslatedTextField.requestFocus();
     }
 
     private JPanel getNewTranslationPanel(GridBagConstraints componentGbc, Dimension translationPanelDimension,
@@ -150,12 +170,6 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 
         categoriesList = getNewList(boldFont, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION, JList.VERTICAL);
 
-        InputMap inputMap = categoriesList.getInputMap();
-        InputMap parentInputMap = inputMap.getParent();
-
-        parentInputMap.remove(KeyStroke.getKeyStroke(Constants.UP));
-        parentInputMap.remove(KeyStroke.getKeyStroke(Constants.DOWN));
-
         scrollPane = getNewScrollPane(scrollPaneDimension, categoriesList);
 
         chooseCategoriesButton = getNewButton(buttonDimension, Constants.CHOOSE_CATEGORY, boldFont);
@@ -177,13 +191,30 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 
         addKeyListeners();
 
+        addNavigationKeyListeners();
+
         addWindowListener();
+
+        addMouseListener();
     }
 
     private void addActionListeners()
     {
+        addActionListenersToArrowPanel();
         addActionListenerToTranslationPanel();
         addActionListenerToCategoryPanel();
+    }
+
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
     }
 
     private void addActionListenerToTranslationPanel()
@@ -193,7 +224,15 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                translateWord();
+                new Thread(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        informationLabel.setText(Constants.TRANSLATING);
+                        translateWord();
+                    }
+                }).start();
             }
         });
     }
@@ -212,39 +251,27 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 
     private void addKeyListeners()
     {
-        addNavigationKeyListeners();
-
-        addKeyListenersToTranslationPanel();
+        addKeyListenerToArrowPanel();
+        addKeyListenerToTranslationPanel();
         addKeyListenersToCategoryPanel();
-
-        this.addKeyListener(new KeyAdapter()
-        {
-            @Override
-            public void keyReleased(KeyEvent e)
-            {
-                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                {
-                    exitFrame();
-                }
-            }
-        });
-
     }
 
-    private void addKeyListenersToTranslationPanel()
+    private void addKeyListenerToArrowPanel()
     {
-        wordToBeTranslatedTextField.addKeyListener(new KeyAdapter()
-        {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
                 {
                     exitFrame();
                 }
             }
         });
+    }
 
+    private void addKeyListenerToTranslationPanel()
+    {
         translateWordButton.addKeyListener(new KeyAdapter()
         {
             @Override
@@ -260,50 +287,55 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
 
     private void addKeyListenersToCategoryPanel()
     {
+        scrollPane.addFocusListener(new FocusAdapter()
+        {
+            @Override
+            public void focusGained(FocusEvent e)
+            {
+                categoriesList.requestFocus();
+            }
+        });
+
         scrollPane.addKeyListener(new KeyAdapter()
         {
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                if(e.getKeyCode() == KeyEvent.VK_UP)
                 {
-                    exitFrame();
+                    int[] indices = categoriesList.getSelectedIndices();
+
+                    if(categoriesList.getSelectedIndex() == 0 && previousIndex == 0 && indices.length == 1)
+                    {
+                        translateWordButton.requestFocus();
+                    }
+                    else if(categoriesList.getSelectedIndex() == 0)
+                    {
+                        previousIndex = 0;
+                    }
+                    else
+                    {
+                        previousIndex = -1;
+                    }
                 }
 
-                if(e.getKeyCode() == KeyEvent.VK_UP && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                if(e.getKeyCode() == KeyEvent.VK_DOWN)
                 {
-                    if(categoriesList.getModel().getSize() > 0)
+                    int[] indices = categoriesList.getSelectedIndices();
+
+                    if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1
+                            && previousIndex == categoriesList.getModel().getSize() - 1 && indices.length == 1)
                     {
-                        if(categoriesList.getSelectedIndex() == 0)
-                        {
-                            translateWordButton.requestFocus();
-                        }
-                        else
-                        {
-                            int selectedIndex = categoriesList.getSelectedIndex();
-                            categoriesList.setSelectedIndex(selectedIndex - 1);
-                            categoriesList.requestFocus();
-                        }
+                        chooseCategoriesButton.requestFocus();
                     }
-
-                }
-
-                if(e.getKeyCode() == KeyEvent.VK_DOWN && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
-                {
-                    if(categoriesList.getModel().getSize() > 0)
+                    else if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1)
                     {
-                        if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1)
-                        {
-                            chooseCategoriesButton.requestFocus();
-                        }
-                        else
-                        {
-                            int selectedIndex = categoriesList.getSelectedIndex();
-                            categoriesList.setSelectedIndex(selectedIndex + 1);
-                            categoriesList.requestFocus();
-                        }
+                        previousIndex = categoriesList.getModel().getSize() - 1;
                     }
-
+                    else
+                    {
+                        previousIndex = -1;
+                    }
                 }
             }
         });
@@ -313,43 +345,42 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
             @Override
             public void keyReleased(KeyEvent e)
             {
-                if(e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                if(e.getKeyCode() == KeyEvent.VK_UP)
                 {
-                    exitFrame();
-                }
+                    int[] indices = categoriesList.getSelectedIndices();
 
-
-                if(e.getKeyCode() == KeyEvent.VK_UP && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
-                {
-                    if(categoriesList.getModel().getSize() > 0)
+                    if(categoriesList.getSelectedIndex() == 0 && previousIndex == 0 && indices.length == 1)
                     {
-                        if(categoriesList.getSelectedIndex() == 0)
-                        {
-                            translateWordButton.requestFocus();
-                        }
-                        else
-                        {
-                            int selectedIndex = categoriesList.getSelectedIndex();
-                            categoriesList.setSelectedIndex(selectedIndex - 1);
-                            categoriesList.requestFocus();
-                        }
+                        translateWordButton.requestFocus();
+                    }
+                    else if(categoriesList.getSelectedIndex() == 0)
+                    {
+                        previousIndex = 0;
+                        categoriesList.requestFocus();
+                    }
+                    else
+                    {
+                        previousIndex = -1;
                     }
                 }
 
-                if(e.getKeyCode() == KeyEvent.VK_DOWN && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                if(e.getKeyCode() == KeyEvent.VK_DOWN)
                 {
-                    if(categoriesList.getModel().getSize() > 0)
+                    int[] indices = categoriesList.getSelectedIndices();
+
+                    if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1
+                            && previousIndex == categoriesList.getModel().getSize() - 1 && indices.length == 1)
                     {
-                        if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1)
-                        {
-                            chooseCategoriesButton.requestFocus();
-                        }
-                        else
-                        {
-                            int selectedIndex = categoriesList.getSelectedIndex();
-                            categoriesList.setSelectedIndex(selectedIndex + 1);
-                            categoriesList.requestFocus();
-                        }
+                        chooseCategoriesButton.requestFocus();
+                    }
+                    else if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1)
+                    {
+                        previousIndex = categoriesList.getModel().getSize() - 1;
+                        categoriesList.requestFocus();
+                    }
+                    else
+                    {
+                        previousIndex = -1;
                     }
                 }
             }
@@ -387,7 +418,26 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                exitFrame();
+                exitProgram();
+            }
+        });
+    }
+
+    private void addMouseListener()
+    {
+        categoriesList.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {
+                if(categoriesList.getSelectedIndex() == 0)
+                {
+                    previousIndex = 0;
+                }
+                else if(categoriesList.getSelectedIndex() == categoriesList.getModel().getSize() - 1)
+                {
+                    previousIndex = categoriesList.getModel().getSize() - 1;
+                }
             }
         });
     }
@@ -438,12 +488,12 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
                 }
             }
             addWordAutomaticallyFrame.dispose();
-            new WordFrame(jsonFilesManager, windowsManager, newWordAndItsContent);
+            new WordFrame(jsonFilesManager, windowsManager, soundFilesManager, newWordAndItsContent);
         }
         else
         {
             new InformationDialog(Constants.ERROR, Constants.NO_CATEGORY_CHOSEN,
-                    Constants.PLEASE_CHOSE_AT_LEAST_ONE_CATEGORY, null);
+                    Constants.PLEASE_CHOSE_AT_LEAST_ONE_CATEGORY, null,null);
         }
     }
 
@@ -461,6 +511,7 @@ public class AddWordAutomaticallyFrame extends ComplexFrame
             categoriesList.setModel(model);
         }
 
+        scrollPane.setEnabled(booleanValue);
         categoriesList.setEnabled(booleanValue);
         chooseCategoriesButton.setEnabled(booleanValue);
 

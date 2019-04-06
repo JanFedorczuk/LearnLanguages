@@ -3,6 +3,8 @@ package LearnLanguages;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +18,8 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     private JMenuBar menuBar = new JMenuBar();
 
     private JPanel toolBarPanel;
+
+    private JButton previousWindowButton;
 
     private JButton addNewListButton;
     private JButton deleteListButton;
@@ -40,10 +44,12 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
     private WindowsManager windowsManager;
 
+    private  int previousIndex = -1;
+
     public ListOfWordsFrame(JsonFilesManager jsonFilesManager, WindowsManager windowsManager)
     {
         this.jsonFilesManager = jsonFilesManager;
-        this.listName = jsonFilesManager.getChosenListName();
+        this.listName = jsonFilesManager.getCurrentListName();
         this.windowsManager = windowsManager;
 
         createUI();
@@ -51,18 +57,16 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         displayUI();
     }
 
-    //////////
-
     private void createUI()
     {
         this.setLayout(new GridBagLayout());
 
         size = getSizeForVisualPurposes();
 
-        buttonWidth  = (int) (size * Constants.buttonWidthMultiplier);
+        buttonWidth      = (int) (size * Constants.buttonWidthMultiplier);
         int buttonHeight = (int) (size * Constants.buttonHeightMultiplier);
 
-        int mainPanelWidth  = (int) (buttonWidth * 1.5);
+        int mainPanelWidth  = (int) (buttonWidth * 1.75);
         int mainPanelHeight = (int) (size * 2.12);
 
         int fontSize = (int) (size * Constants.fontMultiplier);
@@ -70,30 +74,43 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         int wordListHeight = (int) (size * 1.248);
 
         Font font = new Font(Constants.FONT_NAME, Font.BOLD, fontSize);
+        Font toolbarButtonFont = new Font(Constants.FONT_NAME, Font.PLAIN, fontSize);
 
-        Dimension mainPanelDimension  = new Dimension(mainPanelWidth, mainPanelHeight);
-        Dimension listPanelDimension  = new Dimension(mainPanelWidth, (int)Math.round(size * 0.28));
-        Dimension wordsPanelDimension = new Dimension(mainPanelWidth, (int)Math.round(size * 1.424));
+        Dimension mainPanelDimension   = new Dimension(mainPanelWidth, mainPanelHeight);
+        Dimension arrowPanelDimensions = new Dimension(mainPanelWidth, buttonHeight);
+        Dimension listPanelDimension   = new Dimension(mainPanelWidth, (int)Math.round(size * 0.28));
+        Dimension wordsPanelDimension  = new Dimension(mainPanelWidth, (int)Math.round(size * 1.424));
 
         Dimension buttonDimension        = new Dimension(buttonWidth, buttonHeight);
         Dimension toolBarButtonDimension = new Dimension((buttonWidth / 5), buttonHeight);
-        Dimension wordListDimension     = new Dimension(buttonWidth,wordListHeight);
+        Dimension wordListDimension      = new Dimension(buttonWidth, wordListHeight);
 
         GridBagConstraints componentGbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         JPanel mainPanel = getNewPanel(mainPanelDimension,null);
 
+        JPanel arrowPanel = getArrowPanel(arrowPanelDimensions, toolBarButtonDimension, font,null);
+
         JPanel listPanel = createListPanel(componentGbc, listPanelDimension, buttonDimension, toolBarButtonDimension,
-                font);
+                toolbarButtonFont);
+
         JPanel wordsPanel = createWordPanel(componentGbc, wordsPanelDimension, buttonDimension, toolBarButtonDimension,
-                wordListDimension, font);
+                wordListDimension, font, toolbarButtonFont);
+
         menuBar = createMenuBar(font);
 
-        GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.CENTER);
+        previousWindowButton = getPreviousWindowButton(arrowPanel);
+
+        GridBagConstraints panelGbc = getGridBagConstraints(GridBagConstraints.NORTH);
 
         this.setJMenuBar(menuBar);
 
+        panelGbc.gridy = 0;
+        panelGbc.weighty = 0.5;
+        mainPanel.add(arrowPanel, panelGbc);
+
         panelGbc.gridy = 1;
+        panelGbc.weighty = 1;
         mainPanel.add(listPanel, panelGbc);
 
         panelGbc.gridy = 2;
@@ -108,6 +125,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     {
         this.setTitle(Constants.PROGRAM_NAME);
 
+
         this.setLocation(((Constants.DIMENSION.width / 2) - (menuBar.getWidth() / 2)),
                 (int)((Constants.DIMENSION.height / 2) - (Constants.DIMENSION.height / 2.5)));
 
@@ -119,10 +137,8 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         setInitialAvailabilityAndStateOfFrameElements(jsonFilesManager.getListOfLists());
     }
 
-    //////////
-
     private JPanel createListPanel(GridBagConstraints gbc, Dimension listPanelDimension, Dimension buttonDimension,
-                                   Dimension toolBarButtonDimension, Font font)
+                                   Dimension toolBarButtonDimension, Font toolbarButtonFont)
     {
         JPanel listPanel = getNewPanel(listPanelDimension, null);
 
@@ -130,7 +146,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
         listToolbar = getNewToolbar(buttonDimension, false, true);
 
-        addButtonsToListToolbar(toolBarButtonDimension, font);
+        addButtonsToListToolbar(toolBarButtonDimension, toolbarButtonFont);
         toolBarPanel = getNewPanel(buttonDimension, null);
 
         toolBarPanel.add(listToolbar);
@@ -148,7 +164,8 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     }
 
     private JPanel createWordPanel(GridBagConstraints gbc, Dimension wordPanelDimension, Dimension buttonDimension,
-                                   Dimension toolBarButtonDimension, Dimension wordListDimension, Font font)
+                                   Dimension toolBarButtonDimension, Dimension wordListDimension, Font font,
+                                   Font toolbarButtonFont)
     {
         JPanel wordsPanel = getNewPanel(wordPanelDimension, null);
 
@@ -157,32 +174,17 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
         wordToolbar = getNewToolbar(buttonDimension, false,true);
 
-        InputMap inputMap = wordToolbar.getInputMap();
-        InputMap parentInputMap = inputMap.getParent();
-        //parentInputMap.clear();
-
-        addButtonsToWordToolbar(toolBarButtonDimension, font);
-
-        //parentInputMap.remove(KeyStroke.getKeyStroke(Constants.UP));
-        //parentInputMap.remove(KeyStroke.getKeyStroke(Constants.DOWN));
+        addButtonsToWordToolbar(toolBarButtonDimension, toolbarButtonFont);
 
         wordsPanel.add(wordToolbar, gbc);
 
         gbc.gridy = 1;
         gbc.weighty = 0;
 
-        wordList = getNewList(font, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION, JList.VERTICAL);
+        wordList = getNewList(font, ListSelectionModel.SINGLE_SELECTION, JList.VERTICAL);
         wordList.setVisibleRowCount(-1);
 
-        InputMap inputMap2 = wordList.getInputMap();
-        InputMap parentInputMap2 = inputMap2.getParent();
-
-        parentInputMap2.remove(KeyStroke.getKeyStroke(Constants.UP));
-        parentInputMap2.remove(KeyStroke.getKeyStroke(Constants.DOWN));
-
         wordScrollPane = getNewScrollPane(wordListDimension, wordList);
-
-        //removeNativeKeyListeners(wordList);
 
         wordsPanel.add(wordScrollPane, gbc);
 
@@ -197,8 +199,6 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         return menuBar;
     }
 
-    //////////
-
     private void addButtonsToListToolbar(Dimension toolBarButtonDimension, Font font)
     {
         addNewListButton   = getNewButton  (toolBarButtonDimension, Constants.ADD,       font);
@@ -207,11 +207,11 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         moveListDownButton = getNewButton  (toolBarButtonDimension, Constants.MOVE_DOWN, font);
         modifyListButton   = getNewButton  (toolBarButtonDimension, Constants.MODIFY,    font);
 
-        addNewListButton.setName("addNewListButton");
-        deleteListButton.setName("deleteListButton");
-        moveListUpButton.setName("moveListUpButton");
-        moveListDownButton.setName("moveListDownButton");
-        modifyListButton .setName("modifyListButton");
+        addNewListButton.setToolTipText(Constants.ADD_LIST);
+        deleteListButton.setToolTipText(Constants.DELETE_LIST);
+        moveListUpButton.setToolTipText(Constants.MOVE_LIST_UP);
+        moveListDownButton.setToolTipText(Constants.MOVE_LIST_DOWN);
+        modifyListButton.setToolTipText(Constants.MODIFY_LIST);
 
         listToolbar.add(addNewListButton);
         listToolbar.add(deleteListButton);
@@ -230,6 +230,12 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         moveWordDownButton = getNewButton  (toolBarButtonDimension, Constants.MOVE_DOWN, font);
         modifyWordButton   = getNewButton  (toolBarButtonDimension, Constants.MODIFY,    font);
 
+        addNewWorButton.setToolTipText(Constants.ADD_WORD);
+        deleteWordButton.setToolTipText(Constants.DELETE_WORD);
+        moveWordUpButton.setToolTipText(Constants.MOVE_WORD_UP);
+        moveWordDownButton.setToolTipText(Constants.MOVE_WORD_DOWN);
+        modifyWordButton.setToolTipText(Constants.MODIFY_WORD);
+
         wordToolbar.add(addNewWorButton);
         wordToolbar.add(deleteWordButton);
         wordToolbar.add(moveWordUpButton);
@@ -242,8 +248,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     {
         JMenu listMenu     = getNewMenu(Constants.LISTS_MENU_NAME, font);
         JMenu worMenu      = getNewMenu(Constants.WORDS_MENU_NAME, font);
-        JMenu searchMenu   = getNewMenu(Constants.SEARCH_MENU_NAME, font);
-        JMenu sortMenu     = getNewMenu(Constants.SORT_MENU_NAME, font);
+        JMenu optionsMenu   = getNewMenu(Constants.OPTIONS_MENU_NAME, font);
         JMenu settingsMenu = getNewMenu(Constants.SETTINGS_MENU_NAME, font);
 
         JMenuItem addList      = getNewMenuItem(Constants.ADD_LIST, font);
@@ -309,7 +314,6 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         JMenuItem moveWordDown          = getNewMenuItem(Constants.MOVE_WORD_DOWN, font);
         JMenuItem modifyWord            = getNewMenuItem(Constants.MODIFY_WORD, font);
         JMenuItem moveWordToAnotherList = getNewMenuItem(Constants.MOVE_WORD_TO_ANOTHER_LIST, font);
-
 
         addNewWord.addActionListener(new ActionListener()
         {
@@ -383,7 +387,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
             }
         });
 
-        searchMenu.add(find);
+        optionsMenu.add(find);
 
         JMenuItem sort = getNewMenuItem(Constants.SORT, font);
 
@@ -396,7 +400,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
             }
         });
 
-        sortMenu.add(sort);
+        optionsMenu.add(sort);
 
         JMenuItem settings = getNewMenuItem(Constants.SETTINGS, font);
 
@@ -415,18 +419,17 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
         menuBar.add(listMenu);
         menuBar.add(worMenu);
-        menuBar.add(searchMenu);
-        menuBar.add(sortMenu);
+        menuBar.add(optionsMenu);
         menuBar.add(settingsMenu);
     }
-
-    //////////
 
     private void addListenersToFrame()
     {
         addActionListeners();
 
-        addKeyListenerToWordPanel();
+        addKeyListeners();
+
+
 
         addMouseListenerToWordList();
 
@@ -437,30 +440,25 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
     private void addActionListeners()
     {
+        addActionListenersToArrowPanel();
         addActionListenerToListJPanel();
         addActionListenerToWordJPanel();
     }
 
+    private void addActionListenersToArrowPanel()
+    {
+        previousWindowButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                exitFrame();
+            }
+        });
+    }
+
     private void addActionListenerToListJPanel()
     {
-        //for(Component button: listButtons)
-        //{
-        //    for(KeyListener keyListener: button.getKeyListeners())
-        //    {
-        //        button.removeKeyListener(keyListener);
-        //    }
-        //}
-//
-        //for(Component button: listButtons)
-        //{
-        //    for(InputMethodListener inputMethodListener: button.getInputMethodListeners())
-        //    {
-        //        button.removeInputMethodListener(inputMethodListener);
-        //    }
-        //}
-
-
-
         listComboBox.addActionListener(new ActionListener()
         {
             @Override
@@ -564,8 +562,175 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         });
     }
 
+    private void addKeyListeners()
+    {
+        addKeyListenerToArrowPanel();
+        addKeyListenerToWordPanel();
+        addKeyListenersToListPanel();
+        addKeyListenersToWordPanel();
+    }
+
+    private void addKeyListenerToArrowPanel()
+    {
+        previousWindowButton.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    exitFrame();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToListPanel()
+    {
+        addNewListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addNewList();
+                    addNewListButton.requestFocus();
+                }
+            }
+        });
+
+        deleteListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteList();
+                    deleteListButton.requestFocus();
+                }
+            }
+        });
+
+        moveListUpButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveListUp();
+                    moveListUpButton.requestFocus();
+                }
+            }
+        });
+
+        moveListDownButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveListDown();
+                    moveListDownButton.requestFocus();
+                }
+            }
+        });
+
+        modifyListButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    modifyList();
+                    modifyListButton.requestFocus();
+                }
+            }
+        });
+    }
+
+    private void addKeyListenersToWordPanel()
+    {
+        addNewWorButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    addNewWord();
+                    addNewWorButton.requestFocus();
+                }
+            }
+        });
+
+        deleteWordButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    deleteWord();
+                    deleteWordButton.requestFocus();
+                }
+            }
+        });
+
+        moveWordUpButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveWordUp();
+                    moveWordUpButton.requestFocus();
+                }
+            }
+        });
+
+        moveWordDownButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    moveWordDown();
+                    moveWordDownButton.requestFocus();
+                }
+            }
+        });
+
+        modifyWordButton.addKeyListener(new KeyAdapter()
+        {
+            @Override
+            public void keyReleased(KeyEvent e)
+            {
+                if(e.getKeyCode() == KeyEvent.VK_ENTER)
+                {
+                    modifyWord();
+                    modifyWordButton.requestFocus();
+                }
+            }
+        });
+    }
+
     private void addKeyListenerToWordPanel()
     {
+        wordScrollPane.addFocusListener(new FocusAdapter()
+        {
+            @Override
+            public void focusGained(FocusEvent e)
+            {
+                wordList.requestFocus();
+            }
+        });
+
         wordScrollPane.addKeyListener(new KeyAdapter()
         {
             @Override
@@ -576,15 +741,48 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
                     exitFrame();
                 }
 
-                if(e.getKeyCode() == KeyEvent.VK_UP && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                if(e.getKeyCode() == KeyEvent.VK_UP)
+                {
+                    int[] indices = wordList.getSelectedIndices();
+
+                    if(wordList.getSelectedIndex() == 0 && previousIndex == 0 && indices.length == 1)
+                    {
+                        moveWordUpButton.requestFocus();
+                    }
+                    else if(wordList.getSelectedIndex() == 0)
+                    {
+                        previousIndex = 0;
+                    }
+                    else
+                    {
+                        previousIndex = -1;
+                    }
+                }
+
+                if(e.getKeyCode() == KeyEvent.VK_DOWN)
+                {
+                    int[] indices = wordList.getSelectedIndices();
+
+                    if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1
+                            && previousIndex == wordList.getModel().getSize() - 1 && indices.length == 1)
+                    {
+                        moveListUpButton.requestFocus();
+                    }
+                    else if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1)
+                    {
+                        previousIndex = wordList.getModel().getSize() - 1;
+                    }
+                    else
+                    {
+                        previousIndex = -1;
+                    }
+                }
+
+                if(e.getKeyCode() == KeyEvent.VK_LEFT && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
                 {
                     if(wordList.getModel().getSize() > 0)
                     {
-                        if(wordList.getSelectedIndex() == 0)
-                        {
-                            wordToolbar.requestFocus();
-                        }
-                        else
+                        if(wordList.getSelectedIndex() != 0)
                         {
                             int selectedIndex = wordList.getSelectedIndex();
                             wordList.setSelectedIndex(selectedIndex - 1);
@@ -594,16 +792,11 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
                 }
 
-                if(e.getKeyCode() == KeyEvent.VK_DOWN && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                if(e.getKeyCode() == KeyEvent.VK_RIGHT && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
                 {
                     if(wordList.getModel().getSize() > 0)
                     {
-                        if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1)
-                        {
-                            //listToolbar.requestFocus();
-                            moveListUpButton.requestFocus();
-                        }
-                        else
+                        if(wordList.getSelectedIndex() != wordList.getModel().getSize() - 1)
                         {
                             int selectedIndex = wordList.getSelectedIndex();
                             wordList.setSelectedIndex(selectedIndex + 1);
@@ -625,16 +818,48 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
                     exitFrame();
                 }
 
+                if(e.getKeyCode() == KeyEvent.VK_UP)
+                {
+                    int[] indices = wordList.getSelectedIndices();
 
-                if(e.getKeyCode() == KeyEvent.VK_UP && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                    if(wordList.getSelectedIndex() == 0 && previousIndex == 0 && indices.length == 1)
+                    {
+                        moveWordUpButton.requestFocus();
+                    }
+                    else if(wordList.getSelectedIndex() == 0)
+                    {
+                        previousIndex = 0;
+                    }
+                    else
+                    {
+                        previousIndex = -1;
+                    }
+                }
+
+                if(e.getKeyCode() == KeyEvent.VK_DOWN)
+                {
+                    int[] indices = wordList.getSelectedIndices();
+
+                    if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1
+                            && previousIndex == wordList.getModel().getSize() - 1 && indices.length == 1)
+                    {
+                        moveListUpButton.requestFocus();
+                    }
+                    else if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1)
+                    {
+                        previousIndex = wordList.getModel().getSize() - 1;
+                    }
+                    else
+                    {
+                        previousIndex = -1;
+                    }
+                }
+
+                if(e.getKeyCode() == KeyEvent.VK_LEFT && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
                 {
                     if(wordList.getModel().getSize() > 0)
                     {
-                        if(wordList.getSelectedIndex() == 0)
-                        {
-                            wordToolbar.requestFocus();
-                        }
-                        else
+                        if(wordList.getSelectedIndex() != 0)
                         {
                             int selectedIndex = wordList.getSelectedIndex();
                             wordList.setSelectedIndex(selectedIndex - 1);
@@ -643,16 +868,11 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
                     }
                 }
 
-                if(e.getKeyCode() == KeyEvent.VK_DOWN && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
+                if(e.getKeyCode() == KeyEvent.VK_RIGHT && (e.getModifiers() & KeyEvent.SHIFT_MASK) == 0)
                 {
                     if(wordList.getModel().getSize() > 0)
                     {
-                        if(wordList.getSelectedIndex() == wordList.getModel().getSize() - 1)
-                        {
-                            //listToolbar.requestFocus();
-                            moveListUpButton.requestFocus();
-                        }
-                        else
+                        if(wordList.getSelectedIndex() != wordList.getModel().getSize() - 1)
                         {
                             int selectedIndex = wordList.getSelectedIndex();
                             wordList.setSelectedIndex(selectedIndex + 1);
@@ -688,12 +908,13 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
 
                     jsonFilesManager.setCurrentWordIndex(wordList.getSelectedIndex());
-                    jsonFilesManager.setChosenListName(listName);
+                    jsonFilesManager.setCurrentListName(listName);
                     jsonFilesManager.setContentOfGivenWord();
 
                     listOfWordsFrame.dispose();
                     windowsManager.setIfsWordIsdBeingBrowsed(true);
-                    new WordFrame(jsonFilesManager, windowsManager, jsonFilesManager.getContentOfGivenWord());
+                    new WordFrame(jsonFilesManager, windowsManager, new SoundFilesManager(jsonFilesManager),
+                            jsonFilesManager.getContentOfGivenWord());
                 }
             }
 
@@ -721,8 +942,8 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         listButtons.add(moveListDownButton);
         listButtons.add(modifyListButton);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(listButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(listButtons, components, 0, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(listButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(listButtons, components, 0, false);
 
         List<Component> wordButtons = new ArrayList<>();
 
@@ -732,8 +953,8 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         wordButtons.add(moveWordDownButton);
         wordButtons.add(modifyWordButton);
 
-        addHorizontalNavigationKeyBindingsToToolbarButtons(wordButtons);
-        addVerticalNavigationKeyBindingsToToolbarButtons(wordButtons, components, 2, false);
+        addHorizontalNavigationKeyBindingsToGroupOfButtons(wordButtons);
+        addVerticalNavigationKeyBindingsToGroupOfButtons(wordButtons, components, 2, false);
     }
 
     private void addWindowListener()
@@ -743,12 +964,10 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
             @Override
             public void windowClosing(WindowEvent e)
             {
-                exitFrame();
+                exitProgram();
             }
         });
     }
-
-    //////////
 
     private void listComboBoxAction()
     {
@@ -756,7 +975,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         {
             int chosenListIndex = listComboBox.getSelectedIndex();
 
-            jsonFilesManager.setChosenListName(jsonFilesManager.getListOfLists().get(chosenListIndex));
+            jsonFilesManager.setCurrentListName(jsonFilesManager.getListOfLists().get(chosenListIndex));
             jsonFilesManager.setListOfWords();
             changeStateOfWordList();
 
@@ -776,6 +995,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -803,6 +1023,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -810,30 +1031,43 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     {
         try
         {
+            String filePath = jsonFilesManager.getCurrentListName() + "/";
+            if(jsonFilesManager.checkIfFolderExists(filePath))
+            {
+                jsonFilesManager.deleteFileAndAllItsContent(filePath);
+            }
+
             if(jsonFilesManager.getListOfLists().size() != 0)
             {
                 int listIndex = listComboBox.getSelectedIndex();
                 jsonFilesManager.removeListFromJSONListsFileAndDeleteJSONListFile(listIndex);
-
                 jsonFilesManager.setListOfLists();
                 changeStateOfListComboBox();
 
-                if(listIndex >= jsonFilesManager.getListOfLists().size())
+                if(listIndex > jsonFilesManager.getListOfLists().size() - 1)
                 {
                     listIndex = jsonFilesManager.getListOfLists().size() - 1;
                 }
 
-                jsonFilesManager.setCurrentListIndex(listIndex);
+                if(listIndex >= 0)
+                {
+                    jsonFilesManager.setCurrentListIndex(listIndex);
+                    jsonFilesManager.setCurrentListName(jsonFilesManager.getListOfLists().get(listIndex));
 
-                listComboBox.setSelectedIndex(jsonFilesManager.getCurrentListIndex());
-                listComboBox.requestFocus();
+                    listComboBox.setSelectedIndex(jsonFilesManager.getCurrentListIndex());
+
+                    listComboBox.requestFocus();
+                }
 
                 jsonFilesManager.setListOfWords();
                 changeStateOfWordList();
 
-                jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
+                if(listIndex >= 0)
+                {
+                    jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
+                    wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
+                }
 
-                wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
                 wordList.requestFocus();
 
                 if(jsonFilesManager.getListOfLists().size() == 0)
@@ -847,6 +1081,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -870,6 +1105,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -893,11 +1129,10 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     private void modifyList()
     {
         windowsManager.setIfWordIsdBeingModified(true);
-        new AddOrChooseListOfWordsFrame(jsonFilesManager, windowsManager, null);
+        new AddOrChooseListOfWordsFrame(jsonFilesManager, windowsManager, new SoundFilesManager(null),
+                null);
         listOfWordsFrame.dispose();
     }
-
-    //////////
 
     private void addNewWord()
     {
@@ -913,6 +1148,14 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     {
         try
         {
+            String filePath = jsonFilesManager.getCurrentListName() + "/" +
+                    jsonFilesManager.getListOfWords().get(jsonFilesManager.getCurrentWordIndex()) + "/";
+
+            if(jsonFilesManager.checkIfFolderExists(filePath))
+            {
+                jsonFilesManager.deleteFileAndAllItsContent(filePath);
+            }
+
             if(jsonFilesManager.getListOfWords().size() != 0)
             {
                 int listIndex = listComboBox.getSelectedIndex();
@@ -923,11 +1166,6 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
                 jsonFilesManager.setListOfWords();
                 changeStateOfWordList();
 
-                //!!!
-                jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
-                wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
-                wordList.requestFocus();
-
                 if(jsonFilesManager.getListOfWords().size() == 0)
                 {
                     changeAvailabilityOfWordList(false);
@@ -936,12 +1174,16 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
                 {
                     if(wordIndex > jsonFilesManager.getListOfWords().size() - 1)
                     {
-                        wordList.setSelectedIndex(jsonFilesManager.getListOfWords().size() - 1);
+                        jsonFilesManager.setCurrentWordIndex(jsonFilesManager.getListOfWords().size() - 1);
+                        wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
                     }
                     else
                     {
+                        jsonFilesManager.setCurrentWordIndex(wordIndex);
                         wordList.setSelectedIndex(wordIndex);
                     }
+
+                    wordList.requestFocus();
                 }
             }
             else
@@ -950,6 +1192,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         }
         catch (Exception exception)
         {
+            exception.printStackTrace();
         }
     }
 
@@ -964,10 +1207,6 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
 
             changeStateOfWordList();
 
-            //wordList.setSelectedIndex(wordIndex - 1);
-            //wordList.requestFocus();
-
-            //!!!
             jsonFilesManager.setCurrentWordIndex(wordIndex- 1);
             wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
             wordList.requestFocus();
@@ -979,17 +1218,12 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         int listIndex = listComboBox.getSelectedIndex();
         int wordIndex = wordList.getSelectedIndex();
 
-        //if((wordIndex != 0) && (wordIndex != -1))
         if(wordIndex != jsonFilesManager.getListOfWords().size() - 1)
         {
             jsonFilesManager.moveWordDownInJsonFile(listIndex, wordIndex);
 
             changeStateOfWordList();
 
-            //wordList.setSelectedIndex(wordIndex + 1);
-            //wordList.requestFocus();
-
-            //!!!
             jsonFilesManager.setCurrentWordIndex(wordIndex + 1);
             wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
             wordList.requestFocus();
@@ -1002,29 +1236,35 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         {
             listOfWordsFrame.dispose();
 
+            jsonFilesManager.setListOfWords();
+
             jsonFilesManager.setCurrentWordIndex(wordList.getSelectedIndex());
             jsonFilesManager.setCurrentListIndex(listComboBox.getSelectedIndex());
 
             jsonFilesManager.setContentOfGivenWord();
-            jsonFilesManager.setChosenListName(jsonFilesManager.getListOfLists().get(listComboBox.getSelectedIndex()));
-
-            //AddOrEditWordManuallyFrame addOrEditWordManuallyFrame = new AddOrEditWordManuallyFrame
-            //        (jsonFilesManager.getContentOfGivenWord(), jsonFilesManager,
-            //                false);
+            jsonFilesManager.setCurrentListName(jsonFilesManager.getListOfLists().get(listComboBox.getSelectedIndex()));
 
             windowsManager.setIfWordIsdBeingModified(true);
+            windowsManager.setIfsWordIsdBeingBrowsed(true);
 
             AddOrEditWordManuallyFrame addOrEditWordManuallyFrame = new AddOrEditWordManuallyFrame
-                    (jsonFilesManager, windowsManager, jsonFilesManager.getContentOfGivenWord());
+                    (jsonFilesManager, windowsManager, new SoundFilesManager(jsonFilesManager),
+                            jsonFilesManager.getContentOfGivenWord());
         }
     }
 
-    //////////
-
     private void moveWordToAnotherList()
     {
-        new MoveWordToAnotherListFrame(jsonFilesManager).setVisible(true);
-        listOfWordsFrame.dispose();
+        if(jsonFilesManager.getListOfLists().size() >= 2)
+        {
+            new MoveWordToAnotherListFrame(jsonFilesManager).setVisible(true);
+            listOfWordsFrame.dispose();
+        }
+        else
+        {
+            new InformationDialog(Constants.INFORMATION, Constants.THERE_HAS_TO_BE_TWO_LISTS,
+                    Constants.CLICK_OK_TO_CONTINUE,null, null);
+        }
     }
 
     private void wordListKeyAction()
@@ -1032,12 +1272,13 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         listName = jsonFilesManager.getListOfLists().get(listComboBox.getSelectedIndex());
 
         jsonFilesManager.setCurrentWordIndex(wordList.getSelectedIndex());
-        jsonFilesManager.setChosenListName(listName);
+        jsonFilesManager.setCurrentListName(listName);
         jsonFilesManager.setContentOfGivenWord();
 
         listOfWordsFrame.dispose();
         windowsManager.setIfsWordIsdBeingBrowsed(true);
-        new WordFrame(jsonFilesManager, windowsManager, jsonFilesManager.getContentOfGivenWord());
+        new WordFrame(jsonFilesManager, windowsManager, new SoundFilesManager(null),
+                jsonFilesManager.getContentOfGivenWord());
     }
 
     public void exitFrame()
@@ -1052,7 +1293,7 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
         {
             new InformationDialog(Constants.ERROR,
                     Constants.TO_USE_OPTION_THERE_HAS_TO_BE_AT_LEAST_ONE_LIST,
-                    Constants.CLICK_OK_TO_CONTINUE, null);
+                    Constants.CLICK_OK_TO_CONTINUE, null,null);
         }
         else
         {
@@ -1121,6 +1362,10 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
     {
         wordList.setFocusable(booleanValue);
         wordList.setEnabled(booleanValue);
+
+        wordScrollPane.setFocusable(booleanValue);
+        wordScrollPane.setEnabled(booleanValue);
+
         if(jsonFilesManager.getListOfWords().size() != 0)
         {
             wordList.setSelectedIndex(jsonFilesManager.getCurrentWordIndex());
