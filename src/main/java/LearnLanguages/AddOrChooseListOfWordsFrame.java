@@ -1104,6 +1104,11 @@ public class AddOrChooseListOfWordsFrame extends MultiComponentComplexFrame
         {
             changeAvailabilityOfGivenElements(false, listComboBox, listTextField);
             changeAvailabilityOfGivenElements(false, wordComboBox, null);
+
+            if(!listComboBox.isFocusable())
+            {
+                moveListUpButton.requestFocus();
+            }
         }
     }
 

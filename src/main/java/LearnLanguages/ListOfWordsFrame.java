@@ -3,8 +3,6 @@ package LearnLanguages;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1340,6 +1338,11 @@ public class ListOfWordsFrame extends MultiComponentComplexFrame
             changeAvailabilityOfListComboBox(false);
             changeAvailabilityOfWordButtons(false);
             changeAvailabilityOfWordList(false);
+
+            if(!listComboBox.isFocusable())
+            {
+                moveListUpButton.requestFocus();
+            }
         }
     }
 

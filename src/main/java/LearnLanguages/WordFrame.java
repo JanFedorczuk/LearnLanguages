@@ -49,6 +49,8 @@ public class WordFrame extends ComplexFrame
         this.soundFilesManager = soundFilesManager;
         this.wordAndItsContent = wordAndItsContent;
 
+        System.out.println(wordAndItsContent);
+
         createUI();
         setUIOptions();
         displayUI();
@@ -873,28 +875,6 @@ public class WordFrame extends ComplexFrame
             }
             else
             {
-                editWordContentButton.addKeyListener(new KeyAdapter()
-                {
-                    public void keyReleased(KeyEvent e)
-                    {
-                        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                        {
-                            exitFrame();
-                        }
-                    }
-                });
-
-                nextWindowButton.addKeyListener(new KeyAdapter()
-                {
-                    public void keyReleased(KeyEvent e)
-                    {
-                        if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-                        {
-                            exitFrame();
-                        }
-                    }
-                });
-
                 components.add(editWordContentButton);
                 components.add(nextWindowButton);
 
@@ -966,8 +946,10 @@ public class WordFrame extends ComplexFrame
     {
         try
         {
+            List<List<String>> copyOfWordAndItsContent = new ArrayList<>(wordAndItsContent);
+            copyOfWordAndItsContent.remove(0);
             List<List<String>> newListOfStringLists = new ArrayList<>();
-            for(List<String> List: wordAndItsContent)
+            for(List<String> List: copyOfWordAndItsContent)
             {
                 List<String> newStringList = new ArrayList<>();
                 for (String string: List)
